@@ -4,6 +4,8 @@
 #include "core/types.h"
 #include "math/math.h"
 
+struct tc_Bitmap;
+
 struct tc_BackBuffer
 {
     void *pixels;
@@ -11,14 +13,6 @@ struct tc_BackBuffer
     u32 height;
     u32 width;
     u32 pitch;
-};
-
-struct tc_Bitmap
-{
-    void *pixels;
-    u32 width;
-    u32 height;
-    s32 pitch;
 };
 
 struct tc_Renderer
@@ -41,5 +35,7 @@ void tc_software_renderer_clear(tc_Renderer *renderer, u32 color);
 
 void tc_software_renderer_draw_rect(tc_Renderer *renderer, u32 x, u32 y, u32 width, u32 height, u32 color);
 void tc_software_renderer_draw_triangle(tc_Renderer *renderer, tc_Bitmap *texture, tc_Vertex *vertex0, tc_Vertex *vertex1, tc_Vertex *vertex2);
+
+void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, m4 transform, tc_Vertex *vertices, u32 count);
 
 #endif // TC_SOFTWARE_RENDERER_H

@@ -6,29 +6,6 @@
 
 #include <emmintrin.h>
 
-static tc_Bitmap tc_load_bmp_file(char *path)
-{
-    tc_DebugFile file = tc_DEBUG_platform_read_file(path);
-
-    u8 *header = (u8 *)file.memory;
-    u32 pixel_offset = *(u32 *)(header + 10);
-    
-    u8 *info_header = header + 14;
-    u32 width = *(u32 *)(info_header + 4);
-    u32 height = *(u32 *)(info_header + 8);
-    u16 bpp = *(u16 *)(info_header + 14);
-
-    ASSERT(bpp == 32);
-
-    tc_Bitmap bitmap = {};
-    bitmap.width = (u32)width;
-    bitmap.height = (u32)height;
-    bitmap.pixels = (void *)(header + pixel_offset);
-    bitmap.pitch = (s32)(bitmap.width * 4);
-    
-    return bitmap;
-}
-
 void tc_software_renderer_clear(tc_Renderer *renderer, u32 color)
 {
     u32 width = renderer->backbuffer.width;
@@ -269,13 +246,23 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     sort_vertices(&vertex0, &vertex1, &vertex2);
 
     tc_BackBuffer *buffer = &renderer->backbuffer;
+    u32 *texture_pixel = (u32 *)texture->pixels;
+    
+    tc_Vertex v0 = *vertex0;
+    tc_Vertex v1 = *vertex1;
+    tc_Vertex v2 = *vertex2;
 
-    float x0 = vertex0->position.x;
-    float y0 = vertex0->position.y;
-    float x1 = vertex1->position.x;
-    float y1 = vertex1->position.y;
-    float x2 = vertex2->position.x;
-    float y2 = vertex2->position.y;
+    float x0 = v0.position.x;
+    float y0 = v0.position.y;
+    float z0 = v0.position.z;
+    
+    float x1 = v1.position.x;
+    float y1 = v1.position.y;
+    float z1 = v1.position.z;
+    
+    float x2 = v2.position.x;
+    float y2 = v2.position.y;
+    float z2 = v2.position.z;
     
     
     int min_x = (int)f32_min_3(x0, x1, x2);
@@ -291,37 +278,44 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     u32 x_step_size = 4;
     u32 y_step_size = 1;
     
+    u32 buffer_width = buffer->width;
+    u32 buffer_pitch = buffer->pitch;
+    float *buffer_depth = buffer->depth;
+
     __m128 width_wide = _mm_set_ps1((f32)buffer->width);
     __m128 height_wide = _mm_set_ps1((f32)buffer->height);
 
     __m128 texture_width_wide = _mm_set_ps1((f32)texture->width);
     __m128 texture_height_wide = _mm_set_ps1((f32)texture->height);
+    u32 texture_with = texture->width;
+    //u32 texture_height = texture->height;
 
-    __m128 one_over_z_0 = _mm_set_ps1(1.0f / vertex0->position.z);
-    __m128 one_over_z_1 = _mm_set_ps1(1.0f / vertex1->position.z);
-    __m128 one_over_z_2 = _mm_set_ps1(1.0f / vertex2->position.z);
+    __m128 one_over_z_0 = _mm_set_ps1(1.0f / z0);
+    __m128 one_over_z_1 = _mm_set_ps1(1.0f / z1);
+    __m128 one_over_z_2 = _mm_set_ps1(1.0f / z2);
 
-    __m128 x_coord_over_z_0 = _mm_mul_ps(_mm_set_ps1(vertex0->coord.x), one_over_z_0);
-    __m128 y_coord_over_z_0 = _mm_mul_ps(_mm_set_ps1(vertex0->coord.y), one_over_z_0);
-    __m128 x_coord_over_z_1 = _mm_mul_ps(_mm_set_ps1(vertex1->coord.x), one_over_z_1);
-    __m128 y_coord_over_z_1 = _mm_mul_ps(_mm_set_ps1(vertex1->coord.y), one_over_z_1);
-    __m128 x_coord_over_z_2 = _mm_mul_ps(_mm_set_ps1(vertex2->coord.x), one_over_z_2);
-    __m128 y_coord_over_z_2 = _mm_mul_ps(_mm_set_ps1(vertex2->coord.y), one_over_z_2);
+    __m128 x_coord_over_z_0 = _mm_mul_ps(_mm_set_ps1(v0.coord.x), one_over_z_0);
+    __m128 y_coord_over_z_0 = _mm_mul_ps(_mm_set_ps1(v0.coord.y), one_over_z_0);
+    __m128 x_coord_over_z_1 = _mm_mul_ps(_mm_set_ps1(v1.coord.x), one_over_z_1);
+    __m128 y_coord_over_z_1 = _mm_mul_ps(_mm_set_ps1(v1.coord.y), one_over_z_1);
+    __m128 x_coord_over_z_2 = _mm_mul_ps(_mm_set_ps1(v2.coord.x), one_over_z_2);
+    __m128 y_coord_over_z_2 = _mm_mul_ps(_mm_set_ps1(v2.coord.y), one_over_z_2);
     
-    __m128 r_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(vertex0->color.x), one_over_z_0);
-    __m128 g_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(vertex0->color.y), one_over_z_0);
-    __m128 b_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(vertex0->color.z), one_over_z_0);
-    __m128 r_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(vertex1->color.x), one_over_z_1);
+    __m128 r_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(v0.color.x), one_over_z_0);
+    __m128 g_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(v0.color.y), one_over_z_0);
+    __m128 b_color_over_z_0 = _mm_mul_ps(_mm_set_ps1(v0.color.z), one_over_z_0);
+    __m128 r_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(v1.color.x), one_over_z_1);
     
-    __m128 g_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(vertex1->color.y), one_over_z_1);
-    __m128 b_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(vertex1->color.z), one_over_z_1);
+    __m128 g_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(v1.color.y), one_over_z_1);
+    __m128 b_color_over_z_1 = _mm_mul_ps(_mm_set_ps1(v1.color.z), one_over_z_1);
     
-    __m128 r_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(vertex2->color.x), one_over_z_2);
-    __m128 g_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(vertex2->color.y), one_over_z_2);
-    __m128 b_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(vertex2->color.z), one_over_z_2);
+    __m128 r_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(v2.color.x), one_over_z_2);
+    __m128 g_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(v2.color.y), one_over_z_2);
+    __m128 b_color_over_z_2 = _mm_mul_ps(_mm_set_ps1(v2.color.z), one_over_z_2);
 
     __m128 zero_wide = _mm_set_ps1(0.0f);
     __m128 one_wide = _mm_set_ps1(1.0f);
+    __m128 xFF_F32_wide = _mm_set_ps1(255);
     __m128i xFF_wide = _mm_set1_epi32(0xFF);
 
     __m128 w0_row;
@@ -368,7 +362,7 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
                 __m128 z = _mm_div_ps(one_wide, one_over_z);
 
                 // NOTE: z buffer test
-                f32 *z_buffer_bucket = (buffer->depth + y * buffer->width + x);
+                f32 *z_buffer_bucket = (buffer_depth + y * buffer_width + x);
                 __m128 z_test_wide = _mm_loadu_ps(z_buffer_bucket);
                 __m128 z_mask = _mm_cmplt_ps(z, z_test_wide); 
                 u32 test_z_mask = (u32)_mm_movemask_ps(z_mask);
@@ -385,32 +379,32 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
                     __m128 s = _mm_max_ps(_mm_min_ps(_mm_mul_ps(u, texture_width_wide ), _mm_sub_ps(texture_width_wide, one_wide)), zero_wide);
                     __m128 t = _mm_max_ps(_mm_min_ps(_mm_mul_ps(v, texture_height_wide), _mm_sub_ps(texture_height_wide, one_wide)), zero_wide);
                     
-                    // TODO: try to fix this texture fetching
-                    __m128i us = _mm_cvtps_epi32(s);
-                    __m128i ut = _mm_cvtps_epi32(t);
+                    _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+                    __m128i us =_mm_cvtps_epi32(s);
+                    __m128i ut =_mm_cvtps_epi32(t);
                     u32 *s_ptr = (u32 *)&us;
                     u32 *t_ptr = (u32 *)&ut;
-                    u32 new_color0 = *((u32 *)texture->pixels + (t_ptr[0] * texture->width + s_ptr[0]));
-                    u32 new_color1 = *((u32 *)texture->pixels + (t_ptr[1] * texture->width + s_ptr[1]));
-                    u32 new_color2 = *((u32 *)texture->pixels + (t_ptr[2] * texture->width + s_ptr[2]));
-                    u32 new_color3 = *((u32 *)texture->pixels + (t_ptr[3] * texture->width + s_ptr[3]));
+                    u32 new_color0 = *(texture_pixel + (t_ptr[0]*texture_with + s_ptr[0]));
+                    u32 new_color1 = *(texture_pixel + (t_ptr[1]*texture_with + s_ptr[1]));
+                    u32 new_color2 = *(texture_pixel + (t_ptr[2]*texture_with + s_ptr[2]));
+                    u32 new_color3 = *(texture_pixel + (t_ptr[3]*texture_with + s_ptr[3]));
                     
                     __m128i sample = _mm_set_epi32((s32)new_color3, (s32)new_color2, (s32)new_color1, (s32)new_color0);
                     __m128i old_sample = _mm_loadu_si128((__m128i *)pixel);
-                
-                    // NOTE: vertex color lerp
-                    __m128i r_sample = _mm_and_si128(_mm_srli_epi32(sample,16), xFF_wide);
-                    __m128i g_sample = _mm_and_si128(_mm_srli_epi32(sample, 8), xFF_wide);
-                    __m128i b_sample = _mm_and_si128(_mm_srli_epi32(sample, 0), xFF_wide);
-
-                    __m128 r = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, r_color_over_z_0), _mm_mul_ps(nrm_w1, r_color_over_z_1)), _mm_mul_ps(nrm_w2, r_color_over_z_2)), z), _mm_castsi128_ps(xFF_wide));
-                    __m128 g = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, g_color_over_z_0), _mm_mul_ps(nrm_w1, g_color_over_z_1)), _mm_mul_ps(nrm_w2, g_color_over_z_2)), z), _mm_castsi128_ps(xFF_wide));
-                    __m128 b = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, b_color_over_z_0), _mm_mul_ps(nrm_w1, b_color_over_z_1)), _mm_mul_ps(nrm_w2, b_color_over_z_2)), z), _mm_castsi128_ps(xFF_wide));
+                    
+                    //NOTE: vertex color lerp
+                    __m128 r_sample = _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sample,16), xFF_wide));
+                    __m128 g_sample = _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sample, 8), xFF_wide));
+                    __m128 b_sample = _mm_cvtepi32_ps(_mm_and_si128(_mm_srli_epi32(sample, 0), xFF_wide));
+                    
+                    __m128 r = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, r_color_over_z_0), _mm_mul_ps(nrm_w1, r_color_over_z_1)), _mm_mul_ps(nrm_w2, r_color_over_z_2)), z), xFF_F32_wide);
+                    __m128 g = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, g_color_over_z_0), _mm_mul_ps(nrm_w1, g_color_over_z_1)), _mm_mul_ps(nrm_w2, g_color_over_z_2)), z), xFF_F32_wide);
+                    __m128 b = _mm_mul_ps(_mm_mul_ps(_mm_add_ps(_mm_add_ps(_mm_mul_ps(nrm_w0, b_color_over_z_0), _mm_mul_ps(nrm_w1, b_color_over_z_1)), _mm_mul_ps(nrm_w2, b_color_over_z_2)), z), xFF_F32_wide);
                     
                     __m128 f = _mm_set_ps1(0.5f);
-                    __m128i fr = _mm_castps_si128(_mm_add_ps(_mm_mul_ps(_mm_castsi128_ps(r_sample), f), _mm_mul_ps(r, _mm_sub_ps(one_wide, f))));
-                    __m128i fg = _mm_castps_si128(_mm_add_ps(_mm_mul_ps(_mm_castsi128_ps(g_sample), f), _mm_mul_ps(g, _mm_sub_ps(one_wide, f))));
-                    __m128i fb = _mm_castps_si128(_mm_add_ps(_mm_mul_ps(_mm_castsi128_ps(b_sample), f), _mm_mul_ps(b, _mm_sub_ps(one_wide, f))));
+                    __m128i fr = _mm_cvtps_epi32(_mm_add_ps(_mm_mul_ps(r_sample, f), _mm_mul_ps(r, _mm_sub_ps(one_wide, f))));
+                    __m128i fg = _mm_cvtps_epi32(_mm_add_ps(_mm_mul_ps(g_sample, f), _mm_mul_ps(g, _mm_sub_ps(one_wide, f))));
+                    __m128i fb = _mm_cvtps_epi32(_mm_add_ps(_mm_mul_ps(b_sample, f), _mm_mul_ps(b, _mm_sub_ps(one_wide, f))));
                     
                     sample = _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi32(xFF_wide, 24), _mm_slli_epi32(fr, 16)), _mm_slli_epi32(fg, 8)), _mm_slli_epi32(fb, 0));
                     
@@ -430,51 +424,24 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
         w0_row = _mm_add_ps(w0_row, edge12.one_step_y);
         w1_row = _mm_add_ps(w1_row, edge20.one_step_y);
         w2_row = _mm_add_ps(w2_row, edge01.one_step_y);
-        row += buffer->pitch;
+        row += buffer_pitch;
     }
 }
 
-static bool test_init;
-static m4 projection;
-static m4 rotation;
-static m4 translation;
-static f32 width;
-static f32 height;
-static tc_Bitmap texture;
-
-void tc_rasterizer_test(tc_Renderer *renderer)
+void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, m4 transform, tc_Vertex *vertices, u32 count)
 {
-    if(!test_init)
+    for(u32 i = 0; i < count; i+=3)
     {
-        width = (f32)renderer->backbuffer.width;
-        height = (f32)renderer->backbuffer.height;
+        tc_Vertex vertex0 = vertices[i + 0];
+        tc_Vertex vertex1 = vertices[i + 1];
+        tc_Vertex vertex2 = vertices[i + 2];
         
-        projection = m4_perspective(f32_rad(60), width/height, 100.0f, 1.0f);
-        translation = m4_translate(_v3(0, 0, -2));
+        v4 vertex0_4 = transform * to_v4(vertex0.position);
+        v4 vertex1_4 = transform * to_v4(vertex1.position);
+        v4 vertex2_4 = transform * to_v4(vertex2.position);
 
-        texture = tc_load_bmp_file("test.bmp");
-        
-        test_init = true;
-    }
-
-    static f32 angle = 0;
-    rotation = m4_rotate_y(f32_rad(angle)) * m4_rotate_z(f32_rad(angle));
-    angle += 1.0f;
-    
-    for(int i = 0; i < 36; i+=3)
-    {
-        tc_Vertex vertex0 = cube[i + 0];
-        tc_Vertex vertex1 = cube[i + 1];
-        tc_Vertex vertex2 = cube[i + 2];
-        
-        m4 model = translation * rotation;
-
-        v4 vertex0_4 = projection * model * to_v4(vertex0.position);
-        v4 vertex1_4 = projection * model * to_v4(vertex1.position);
-        v4 vertex2_4 = projection * model * to_v4(vertex2.position);
-
-        f32 hw = width / 2.0f;
-        f32 hh = height / 2.0f;
+        f32 hw = (f32)renderer->backbuffer.width / 2.0f;
+        f32 hh = (f32)renderer->backbuffer.height / 2.0f;
 
         vertex0.position = perspective_divide(vertex0_4);
         vertex1.position = perspective_divide(vertex1_4);
@@ -487,6 +454,6 @@ void tc_rasterizer_test(tc_Renderer *renderer)
         vertex2.position.x = vertex2.position.x * hw + hw; 
         vertex2.position.y = vertex2.position.y * hh + hh; 
 
-        tc_software_renderer_draw_triangle_fast(renderer, &texture, &vertex0, &vertex1, &vertex2);
+        tc_software_renderer_draw_triangle_fast(renderer, texture, &vertex0, &vertex1, &vertex2);
     }
 }

@@ -48,6 +48,14 @@ struct tc_DebugFile
     u64 size;
 };
 
+struct tc_Bitmap
+{
+    void *pixels;
+    u32 width;
+    u32 height;
+    s32 pitch;
+};
+
 tc_Window *tc_platform_create_window(char *name, int x, int y, int width, int height);
 void tc_platform_destroy_window(tc_Window *window);
 
@@ -56,10 +64,12 @@ tc_Event *tc_platform_pop_event(tc_Window *window);
 void *tc_platfrom_virtual_alloc(void *base, size_t size);
 void tc_platfrom_virtual_free(void *mem);
 
+u32 tc_platfrom_get_ms();
 void tc_platform_sleep(u32 ms);
 u64 tc_platform_get_cycle_count();
 
 tc_DebugFile tc_DEBUG_platform_read_file(char *path);
 void tc_DEBUG_platform_free_file(tc_DebugFile *file);
+tc_Bitmap tc_DEBUG_platform_load_bmp_file(char *path);
 
 #endif // TC_PLATFORM_H
