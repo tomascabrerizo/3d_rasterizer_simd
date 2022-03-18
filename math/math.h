@@ -24,6 +24,34 @@ struct m4
     f32 m[4][4];
 };
 
+struct rect2d
+{
+    v2 min;
+    v2 max;
+};
+
+//
+// vector2 functions
+//
+
+inline v2 _v2(f32 x, f32 y)
+{
+    v2 result = {x, y};
+    return result;
+}
+
+inline v2 operator+(v2 a, v2 b)
+{
+    v2 result = {a.x + b.x, a.y + b.y};
+    return result;
+}
+
+inline v2 operator-(v2 a, v2 b)
+{
+    v2 result = {a.x - b.x, a.y - b.y};
+    return result;
+}
+
 //
 // vector3 functions
 //
@@ -328,6 +356,46 @@ inline m4 m4_ortho(f32 r, f32 l, f32 t, f32 b, f32 f, f32 n)
     result.m[2][2] = 2 / fmn;
     result.m[2][3] = -(fpn / fmn);
     result.m[3][3] = 1.0f;
+    return result;
+}
+
+//
+// rect 2d functions
+// rect2d dont include max x, and max y
+
+inline rect2d rect2d_min_max(v2 min, v2 max)
+{
+    rect2d result = {};
+    result.min = min;
+    result.max = max;
+    return result;
+}
+
+inline rect2d rect2d_min_dim(v2 min, v2 dim)
+{
+    rect2d result = {};
+    result.min = min;
+    result.max = min + dim;
+    return result;
+}
+
+inline rect2d rect2d_intersection(rect2d r0, rect2d r1)
+{
+    rect2d result = {};
+    result.min.x = r0.min.x > r1.min.x ? r0.min.x : r1.min.x;
+    result.min.y = r0.min.y > r1.min.y ? r0.min.y : r1.min.y;
+    result.max.x = r0.max.x < r1.max.x ? r0.max.x : r1.max.x;
+    result.max.y = r0.max.y < r1.max.y ? r0.max.y : r1.max.y;
+    return result;
+}
+
+inline rect2d rect2d_union(rect2d r0, rect2d r1)
+{
+    rect2d result = {};
+    result.min.x = r0.min.x < r1.min.x ? r0.min.x : r1.min.x;
+    result.min.y = r0.min.y < r1.min.y ? r0.min.y : r1.min.y;
+    result.max.x = r0.max.x > r1.max.x ? r0.max.x : r1.max.x;
+    result.max.y = r0.max.y > r1.max.y ? r0.max.y : r1.max.y;
     return result;
 }
 

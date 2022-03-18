@@ -241,7 +241,7 @@ static inline tc_Edge create_edge(v3 v0, v3 v1, v3 p, u32 step_size_x, u32 step_
     return result;
 }
 
-void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *texture, tc_Vertex *vertex0, tc_Vertex *vertex1, tc_Vertex *vertex2)
+void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, tc_Vertex *vertex0, tc_Vertex *vertex1, tc_Vertex *vertex2)
 {
     sort_vertices(&vertex0, &vertex1, &vertex2);
 
@@ -265,15 +265,18 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     float z2 = v2.position.z;
     
     
-    int min_x = (int)f32_min_3(x0, x1, x2);
-    int max_x = (int)(f32_max_3(x0, x1, x2) + 1);
-    int min_y = (int)f32_min_3(y0, y1, y2);
-    int max_y = (int)(f32_max_3(y0, y1, y2) + 1);
+    rect2d render_rect;
+    render_rect.min.x = f32_min_3(x0, x1, x2);
+    render_rect.max.x = (f32_max_3(x0, x1, x2) + 1);
+    render_rect.min.y = f32_min_3(y0, y1, y2);
+    render_rect.max.y = (f32_max_3(y0, y1, y2) + 1);
+    
+    render_rect.min.x = (f32)((s32)render_rect.min.x - 3 & ~(3)) + 4;
+    render_rect.max.x = (f32)((s32)render_rect.max.x + 3 & ~(3));
+    
+    render_rect = rect2d_intersection(render_rect, clipping_rect);
 
-    if(min_x < 0) min_x = 0;
-    if(min_y < 0) min_y = 0;
-    if(max_x > (int)(buffer->width-1)) max_x = (int)(buffer->width-1);
-    if(max_y > (int)(buffer->height-1)) max_y = (int)(buffer->height-1);
+    ASSERT(((u32)render_rect.min.x % 4 == 0) && ((u32)render_rect.max.x % 4 == 0));
    
     u32 x_step_size = 4;
     u32 y_step_size = 1;
@@ -322,15 +325,20 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     __m128 w1_row;
     __m128 w2_row;
 
-    v3 p = _v3((f32)min_x, (f32)min_y, 1.0f);
+    v3 p = _v3((f32)render_rect.min.x, (f32)render_rect.min.y, 1.0f);
     tc_Edge edge12 = create_edge(vertex1->position, vertex2->position, p, x_step_size, y_step_size, &w0_row);
     tc_Edge edge20 = create_edge(vertex2->position, vertex0->position, p, x_step_size, y_step_size, &w1_row);
     tc_Edge edge01 = create_edge(vertex0->position, vertex1->position, p, x_step_size, y_step_size, &w2_row);
     
     __m128 inv_area = _mm_set_ps1(1.0f / edge_test(x0, y0, x1, y1, x2, y2));
+    
+    u32 min_x = (u32)render_rect.min.x;
+    u32 min_y = (u32)render_rect.min.y;
+    u32 max_x = (u32)render_rect.max.x;
+    u32 max_y = (u32)render_rect.max.y;
 
     char *row = (char *)buffer->pixels + (min_y * buffer->pitch) + (min_x * 4);
-    for(int y = min_y; y <= max_y; y += y_step_size)
+    for(u32 y = min_y; y < max_y; y += y_step_size)
     {
         u32 *pixel = (u32 *)row;
        
@@ -338,7 +346,7 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
         __m128 w1 = w1_row;
         __m128 w2 = w2_row;
 
-        for(int x = min_x; x <= max_x; x += x_step_size)
+        for(u32 x = min_x; x < max_x; x += x_step_size)
         {
             // NOTE: edge test
             __m128 mask0 = _mm_cmpge_ps(w0, zero_wide);
@@ -428,7 +436,7 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     }
 }
 
-void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, m4 transform, tc_Vertex *vertices, u32 count)
+void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, m4 transform, tc_Vertex *vertices, u32 count)
 {
     for(u32 i = 0; i < count; i+=3)
     {
@@ -454,6 +462,48 @@ void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, 
         vertex2.position.x = vertex2.position.x * hw + hw; 
         vertex2.position.y = vertex2.position.y * hh + hh; 
 
-        tc_software_renderer_draw_triangle_fast(renderer, texture, &vertex0, &vertex1, &vertex2);
+        tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &vertex0, &vertex1, &vertex2);
+    }
+}
+
+void tc_software_renderer_push_draw_command(tc_Renderer *renderer, tc_DrawCommand command)
+{
+    tc_CommandBuffer *buffer = &renderer->command_buffer;
+    ASSERT((buffer->count + 1) < COMMAND_BUFFER_MAX);
+    buffer->commands[buffer->count++] = command;
+}
+
+void tc_software_renderer_begin(tc_Renderer *renderer)
+{
+    renderer->command_buffer.count = 0;
+}
+
+inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *renderer, rect2d clipping_rect)
+{
+    tc_CommandBuffer *buffer = &renderer->command_buffer;
+    for(u32 command_index = 0; command_index < buffer->count; ++command_index)
+    {
+        tc_DrawCommand *command = buffer->commands + command_index;
+        tc_software_renderer_draw_array(renderer, command->texture, clipping_rect, command->transform, command->vertices, command->vertex_count);
+    }
+}
+
+void tc_software_renderer_end(tc_Renderer *renderer)
+{
+    f32 width = (f32)renderer->backbuffer.width;
+    f32 height = (f32)renderer->backbuffer.height;
+
+    u32 num_tiles_x = 5;
+    u32 num_tiles_y = 4;
+    
+    v2 tile_dim = _v2(width/(f32)num_tiles_x, height/(f32)num_tiles_y);
+    
+    for(u32 tile_y = 0; tile_y < num_tiles_y; ++tile_y)
+    {
+        for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
+        {
+            rect2d clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(8, 8));
+            tc_software_renderer_draw_command_buffer(renderer, clipping_rect);
+        }
     }
 }

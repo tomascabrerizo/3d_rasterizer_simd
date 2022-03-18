@@ -1,4 +1,5 @@
-#include "Windows.h"
+#include <Windows.h>
+#include <stdio.h>
 #include "window_win32.h"
 
 struct tc_BackBufferWin32
@@ -62,4 +63,71 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
     HDC dc = GetDC(window->handle);
     BitBlt(dc, 0, 0, (int)renderer->backbuffer.width, (int)renderer->backbuffer.height, win32_buffer->dc, 0, 0, SRCCOPY);
     ReleaseDC(window->handle, dc);
+}
+
+//
+// multithreadin training XD!
+//
+
+struct ThreadWork 
+{
+    (*tread_work)(void *attr);
+    void *attributes;
+};
+static ThreadWork work_queue[16];
+static volatile s32 remaining_work;
+
+void push_work(u32 value)
+{
+    ThreadWork *work = work_queue + remaining_work++;
+    work->value = value;
+}
+
+DWORD thread_do_work(void *parameter)
+{
+    printf("hello from different thread number %d\n", (int)(u64)parameter);
+    while(true)
+    {   
+        if(remaining_work >= 0)
+        {
+            s32 work_index = (s32)InterlockedDecrement((LONG volatile *)&remaining_work);
+            if(work_index >= 0)
+            {
+                ThreadWork *work = work_queue + work_index;
+                printf("thread %d, do work number %d\n", (int)(u64)parameter, work->value);
+                Sleep(2);
+            }
+        }
+    }
+    return 0;
+}
+
+static HANDLE thread[4];
+static DWORD thread_id[4];
+
+void tc_worker_thread_queue_test()
+{
+    printf("time to lern mutithreading!\n"); 
+    
+    for(u32 thread_index = 0; thread_index < 4; ++thread_index)
+    {
+        thread[thread_index] = CreateThread(0, 0, thread_do_work, (void *)(u64)thread_index, 0, &thread_id[thread_index]); 
+    }
+
+    push_work(1);
+    push_work(2);
+    push_work(3);
+    push_work(4);
+    push_work(5);
+    push_work(6);
+    push_work(7);
+    push_work(8);
+    push_work(9);
+    push_work(10);
+    push_work(11);
+    push_work(12);
+    push_work(13);
+    push_work(14);
+    push_work(15);
+    push_work(16);
 }

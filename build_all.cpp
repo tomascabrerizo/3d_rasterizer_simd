@@ -17,15 +17,17 @@ int main()
     f32 height = (f32)renderer->backbuffer.height;
     
     m4 projection = m4_perspective(f32_rad(70), width/height, 100.0f, 1.0f);
-    m4 translation1 = m4_translate(_v3(-2,  1, -3.5f));
-    m4 translation2 = m4_translate(_v3( 0,  1, -3.5f));
-    m4 translation3 = m4_translate(_v3( 2,  1, -3.5f));
-    m4 translation4 = m4_translate(_v3(-2, -1, -3.5f));
-    m4 translation5 = m4_translate(_v3( 0, -1, -3.5f));
-    m4 translation6 = m4_translate(_v3( 2, -1, -3.5f));
+    m4 translation1 = m4_translate(_v3(-2,  1, -3.2f));
+    m4 translation2 = m4_translate(_v3( 0,  1, -3.2f));
+    m4 translation3 = m4_translate(_v3( 2,  1, -3.2f));
+    m4 translation4 = m4_translate(_v3(-2, -1, -3.2f));
+    m4 translation5 = m4_translate(_v3( 0, -1, -3.2f));
+    m4 translation6 = m4_translate(_v3( 2, -1, -3.2f));
 
     tc_Bitmap texture = tc_DEBUG_platform_load_bmp_file("test.bmp");
-    
+
+    tc_worker_thread_queue_test();
+
     bool should_close = false;
     while(!should_close)
     {
@@ -46,19 +48,28 @@ int main()
         static f32 angle = 0;
         m4 rotation = m4_rotate_y(f32_rad(angle)) * m4_rotate_z(f32_rad(angle));
         angle += 1.0f;
+       
+        tc_DrawCommand draw_command;
+        draw_command.texture = &texture;
+        draw_command.vertices = cube;
+        draw_command.vertex_count = 36;
         
-        m4 transform = projection * translation1 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
-        transform = projection * translation2 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
-        transform = projection * translation3 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
-        transform = projection * translation4 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
-        transform = projection * translation5 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
-        transform = projection * translation6 * rotation;
-        tc_software_renderer_draw_array(renderer, &texture, transform, cube, 36);
+        tc_software_renderer_begin(renderer);
+
+        draw_command.transform = projection * translation1 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        draw_command.transform = projection * translation2 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        draw_command.transform = projection * translation3 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        draw_command.transform = projection * translation4 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        draw_command.transform = projection * translation5 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        draw_command.transform = projection * translation6 * rotation;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
+        
+        tc_software_renderer_end(renderer);
 
         tc_renderer_swap_buffers(renderer, window);
 
@@ -72,7 +83,7 @@ int main()
         frame_ms = current_ms - last_ms;
         last_ms = current_ms;
         
-        printf("ms: %d\n", frame_ms);
+        //printf("ms: %d\n", frame_ms);
     }
     
     tc_renderer_destroy(renderer);
