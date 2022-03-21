@@ -13,10 +13,97 @@ struct tc_BackBufferWin32
     float *depth;
 };
 
+struct ThreadWork 
+{
+    void (*work)(void *attr);
+    void *attributes;
+};
+
+#define WIN32_THREAD_COUNT 8
+struct ThreadQueue
+{
+    HANDLE threads[WIN32_THREAD_COUNT];
+    DWORD thread_id[WIN32_THREAD_COUNT];
+    HANDLE semaphore;
+    ThreadWork works[64];
+    volatile s32 work_count;
+    volatile s32 next_work_to_do;
+    volatile s32 work_done;
+};
+
+static ThreadQueue global_win32_thread_queue;
+
+void thread_queue_begin(ThreadQueue *queue)
+{
+    queue->work_count = 0;
+    queue->next_work_to_do = 0;
+    queue->work_done = 0;
+}
+
+void thread_queue_push_work(ThreadQueue *queue, ThreadWork work)
+{
+    s32 work_index = queue->work_count;
+    ThreadWork *thread_work = queue->works + work_index;
+    *thread_work = work;
+    
+    // NOTE: ensure that the work was written before incrementing work_count
+    MemoryBarrier();
+    
+    queue->work_count++;
+    ReleaseSemaphore(queue->semaphore, 1, 0);
+}
+
+void thread_queue_end(ThreadQueue *queue)
+{
+    while(queue->work_done != queue->work_count)
+    {
+        // TODO: dont spinlock in the main threa.
+        // help to do the jobs
+    }
+}
+
+DWORD thread_do_work(void *parameter)
+{
+    ThreadQueue *queue = (ThreadQueue *)parameter;
+    while(true)
+    {   
+        s32 original_work_to_do = queue->next_work_to_do;
+        if(original_work_to_do < queue->work_count)
+        {
+            s32 work_index = InterlockedCompareExchange((LONG volatile *)&queue->next_work_to_do, original_work_to_do + 1, original_work_to_do);
+            if(work_index == original_work_to_do)
+            {
+                ThreadWork *work = queue->works + work_index;
+                work->work(work->attributes);
+                InterlockedIncrement((LONG volatile *)&queue->work_done);
+            }
+        }
+        else
+        {
+            WaitForSingleObjectEx(queue->semaphore, INFINITE, FALSE);
+        }
+    }
+    return 0;
+}
+
+void thread_queue_create(ThreadQueue *thread_queue)
+{
+    *thread_queue = {};
+    thread_queue->semaphore = CreateSemaphoreA(0, 0, WIN32_THREAD_COUNT, 0);
+
+    for(u32 thread_index = 0; thread_index < WIN32_THREAD_COUNT; ++thread_index)
+    {
+        thread_queue->threads[thread_index] = CreateThread(0, 0, thread_do_work, (void *)thread_queue, 0, &thread_queue->thread_id[thread_index]); 
+    }
+}
+
 tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
 {
+    thread_queue_create(&global_win32_thread_queue);
+
     tc_Renderer *renderer = (tc_Renderer *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(tc_Renderer));
     renderer->platform = (tc_BackBufferWin32 *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(tc_BackBufferWin32));
+    renderer->thread_queue = &global_win32_thread_queue;
 
     tc_BackBufferWin32 *buffer = (tc_BackBufferWin32 *)renderer->platform;
     
@@ -46,6 +133,7 @@ tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
     renderer->backbuffer.pitch = buffer->width * 4;
 
     return renderer;
+
 }
 
 void tc_platform_destroy_software_renderer(tc_Renderer *renderer)
@@ -63,71 +151,4 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
     HDC dc = GetDC(window->handle);
     BitBlt(dc, 0, 0, (int)renderer->backbuffer.width, (int)renderer->backbuffer.height, win32_buffer->dc, 0, 0, SRCCOPY);
     ReleaseDC(window->handle, dc);
-}
-
-//
-// multithreadin training XD!
-//
-
-struct ThreadWork 
-{
-    (*tread_work)(void *attr);
-    void *attributes;
-};
-static ThreadWork work_queue[16];
-static volatile s32 remaining_work;
-
-void push_work(u32 value)
-{
-    ThreadWork *work = work_queue + remaining_work++;
-    work->value = value;
-}
-
-DWORD thread_do_work(void *parameter)
-{
-    printf("hello from different thread number %d\n", (int)(u64)parameter);
-    while(true)
-    {   
-        if(remaining_work >= 0)
-        {
-            s32 work_index = (s32)InterlockedDecrement((LONG volatile *)&remaining_work);
-            if(work_index >= 0)
-            {
-                ThreadWork *work = work_queue + work_index;
-                printf("thread %d, do work number %d\n", (int)(u64)parameter, work->value);
-                Sleep(2);
-            }
-        }
-    }
-    return 0;
-}
-
-static HANDLE thread[4];
-static DWORD thread_id[4];
-
-void tc_worker_thread_queue_test()
-{
-    printf("time to lern mutithreading!\n"); 
-    
-    for(u32 thread_index = 0; thread_index < 4; ++thread_index)
-    {
-        thread[thread_index] = CreateThread(0, 0, thread_do_work, (void *)(u64)thread_index, 0, &thread_id[thread_index]); 
-    }
-
-    push_work(1);
-    push_work(2);
-    push_work(3);
-    push_work(4);
-    push_work(5);
-    push_work(6);
-    push_work(7);
-    push_work(8);
-    push_work(9);
-    push_work(10);
-    push_work(11);
-    push_work(12);
-    push_work(13);
-    push_work(14);
-    push_work(15);
-    push_work(16);
 }

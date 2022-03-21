@@ -488,22 +488,45 @@ inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *rendere
     }
 }
 
+struct RenderWork
+{
+    tc_Renderer *renderer;
+    rect2d clipping_rect;
+};
+
+void render_work_function(void *param)
+{
+    RenderWork *render_work = (RenderWork *)param;
+    tc_software_renderer_draw_command_buffer(render_work->renderer, render_work->clipping_rect);
+}
+
 void tc_software_renderer_end(tc_Renderer *renderer)
 {
     f32 width = (f32)renderer->backbuffer.width;
     f32 height = (f32)renderer->backbuffer.height;
 
-    u32 num_tiles_x = 5;
-    u32 num_tiles_y = 4;
+    const u32 num_tiles_x = 5;
+    const u32 num_tiles_y = 4;
     
     v2 tile_dim = _v2(width/(f32)num_tiles_x, height/(f32)num_tiles_y);
     
+    thread_queue_begin(renderer->thread_queue);
+    
+    // TODO: fix the RenderWork allocations
+    RenderWork render_work[num_tiles_y][num_tiles_x];
+    ThreadWork work[num_tiles_y][num_tiles_x];
     for(u32 tile_y = 0; tile_y < num_tiles_y; ++tile_y)
     {
         for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
         {
-            rect2d clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(8, 8));
-            tc_software_renderer_draw_command_buffer(renderer, clipping_rect);
+            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(8, 8));
+            render_work[tile_y][tile_x].renderer = renderer;
+            work[tile_y][tile_x] = {render_work_function, (void *)&render_work[tile_y][tile_x]};
+            thread_queue_push_work(renderer->thread_queue, work[tile_y][tile_x]);
+            
         }
     }
+
+    thread_queue_end(renderer->thread_queue);
+
 }

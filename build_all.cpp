@@ -6,8 +6,8 @@
 
 int main()
 {
-    u32 target_fps = 60;
-    u32 target_ms = (u32)(1000.0f / (f32)target_fps);
+    //u32 target_fps = 60;
+    //u32 target_ms = (u32)(1000.0f / (f32)target_fps);
     u32 last_ms = tc_platfrom_get_ms();
 
     tc_Window *window = tc_platform_create_window("test", 100, 100, 1240, 720);
@@ -25,8 +25,6 @@ int main()
     m4 translation6 = m4_translate(_v3( 2, -1, -3.2f));
 
     tc_Bitmap texture = tc_DEBUG_platform_load_bmp_file("test.bmp");
-
-    tc_worker_thread_queue_test();
 
     bool should_close = false;
     while(!should_close)
@@ -75,15 +73,15 @@ int main()
 
         u32 current_ms = tc_platfrom_get_ms();
         u32 frame_ms = current_ms - last_ms;
-        if(frame_ms < target_ms)
-        {
-            tc_platform_sleep(target_ms - frame_ms);
-        }
-        current_ms = tc_platfrom_get_ms();
-        frame_ms = current_ms - last_ms;
+        //if(frame_ms < target_ms)
+        //{
+        //    tc_platform_sleep(target_ms - frame_ms);
+        //}
+        //current_ms = tc_platfrom_get_ms();
+        //frame_ms = current_ms - last_ms;
         last_ms = current_ms;
         
-        //printf("ms: %d\n", frame_ms);
+        printf("ms: %d\n", frame_ms);
     }
     
     tc_renderer_destroy(renderer);

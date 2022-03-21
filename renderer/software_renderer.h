@@ -37,11 +37,14 @@ struct tc_CommandBuffer
     u32 count;
 };
 
+// TODO: ThreadQueue needs to be refactor
+struct ThreadQueue;
 struct tc_Renderer
 {
     void *platform;
     tc_BackBuffer backbuffer;
     tc_CommandBuffer command_buffer;
+    ThreadQueue *thread_queue;
 };
 
 tc_Renderer *tc_platform_create_software_renderer(tc_Window *window);
