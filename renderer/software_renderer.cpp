@@ -1,4 +1,5 @@
 #include "software_renderer.h"
+#include "core/data_structures.h"
 #ifdef _TC_WINDOWS_BUILD
 #include "platform/software_renderer_win32.cpp"
 #else
@@ -456,11 +457,11 @@ void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, 
         vertex2.position = perspective_divide(vertex2_4);
 
         vertex0.position.x = vertex0.position.x * hw + hw; 
-        vertex0.position.y = vertex0.position.y * hh + hh; 
+        vertex0.position.y = -vertex0.position.y * hh + hh; 
         vertex1.position.x = vertex1.position.x * hw + hw;
-        vertex1.position.y = vertex1.position.y * hh + hh; 
+        vertex1.position.y = -vertex1.position.y * hh + hh; 
         vertex2.position.x = vertex2.position.x * hw + hw; 
-        vertex2.position.y = vertex2.position.y * hh + hh; 
+        vertex2.position.y = -vertex2.position.y * hh + hh; 
 
         tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &vertex0, &vertex1, &vertex2);
     }
@@ -514,15 +515,15 @@ void tc_software_renderer_end(tc_Renderer *renderer)
     
     // TODO: fix the RenderWork allocations
     RenderWork render_work[num_tiles_y][num_tiles_x];
-    ThreadWork work[num_tiles_y][num_tiles_x];
     for(u32 tile_y = 0; tile_y < num_tiles_y; ++tile_y)
     {
         for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
         {
-            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(8, 8));
+            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(0, 0));
+            
             render_work[tile_y][tile_x].renderer = renderer;
-            work[tile_y][tile_x] = {render_work_function, (void *)&render_work[tile_y][tile_x]};
-            thread_queue_push_work(renderer->thread_queue, work[tile_y][tile_x]);
+            ThreadWork work = {render_work_function, (void *)&render_work[tile_y][tile_x]};
+            thread_queue_push_work(renderer->thread_queue, work);
             
         }
     }

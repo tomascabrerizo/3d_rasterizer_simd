@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include "window_win32.h"
+//#include "platform/software_renderer_win32.cpp"
 
 struct tc_BackBufferWin32
 {
@@ -57,8 +58,17 @@ void thread_queue_end(ThreadQueue *queue)
 {
     while(queue->work_done != queue->work_count)
     {
-        // TODO: dont spinlock in the main threa.
-        // help to do the jobs
+        s32 original_work_to_do = queue->next_work_to_do;
+        if(original_work_to_do < queue->work_count)
+        {
+            s32 work_index = InterlockedCompareExchange((LONG volatile *)&queue->next_work_to_do, original_work_to_do + 1, original_work_to_do);
+            if(work_index == original_work_to_do)
+            {
+                ThreadWork *work = queue->works + work_index;
+                work->work(work->attributes);
+                InterlockedIncrement((LONG volatile *)&queue->work_done);
+            }
+        }
     }
 }
 
@@ -124,13 +134,18 @@ tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
     
     SelectObject(buffer->dc, buffer->bitmap);
 
-    buffer->depth = (float *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, buffer->width*buffer->height*sizeof(float));
+    buffer->depth = (f32 *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, buffer->width*buffer->height*sizeof(f32));
 
     renderer->backbuffer.pixels = buffer->memory;
     renderer->backbuffer.depth = buffer->depth;
     renderer->backbuffer.width = buffer->width;
     renderer->backbuffer.height = buffer->height;
     renderer->backbuffer.pitch = buffer->width * 4;
+    
+    //tc_CommandBuffer *cmd_buffer = 0;
+    //tc_CommandBuffer test;
+    //array_push(cmd_buffer, test);
+    //printf("capacity: %d, size: %d\n", array_size(cmd_buffer), array_capacity(cmd_buffer));
 
     return renderer;
 
@@ -149,6 +164,6 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
 {
     tc_BackBufferWin32 *win32_buffer = (tc_BackBufferWin32 *)renderer->platform;
     HDC dc = GetDC(window->handle);
-    BitBlt(dc, 0, 0, (int)renderer->backbuffer.width, (int)renderer->backbuffer.height, win32_buffer->dc, 0, 0, SRCCOPY);
+    BitBlt(dc, 0, 0, (s32)renderer->backbuffer.width, (s32)renderer->backbuffer.height, win32_buffer->dc, 0, 0, SRCCOPY);
     ReleaseDC(window->handle, dc);
 }

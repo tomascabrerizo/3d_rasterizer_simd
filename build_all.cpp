@@ -6,9 +6,10 @@
 
 int main()
 {
-    //u32 target_fps = 60;
-    //u32 target_ms = (u32)(1000.0f / (f32)target_fps);
+    u32 target_fps = 60;
+    u32 target_ms = (u32)(1000.0f / (f32)target_fps);
     u32 last_ms = tc_platfrom_get_ms();
+    bool limit_fps = false;
 
     tc_Window *window = tc_platform_create_window("test", 100, 100, 1240, 720);
     tc_Renderer *renderer = tc_renderer_create(window, TC_RENDERER_SOFTWARE);
@@ -73,15 +74,18 @@ int main()
 
         u32 current_ms = tc_platfrom_get_ms();
         u32 frame_ms = current_ms - last_ms;
-        //if(frame_ms < target_ms)
-        //{
-        //    tc_platform_sleep(target_ms - frame_ms);
-        //}
-        //current_ms = tc_platfrom_get_ms();
-        //frame_ms = current_ms - last_ms;
+        if(limit_fps)
+        {
+            if(frame_ms < target_ms)
+            {
+                tc_platform_sleep(target_ms - frame_ms);
+            }
+            current_ms = tc_platfrom_get_ms();
+            frame_ms = current_ms - last_ms;
+        }
         last_ms = current_ms;
         
-        printf("ms: %d\n", frame_ms);
+        //printf("ms: %d\n", frame_ms);
     }
     
     tc_renderer_destroy(renderer);
