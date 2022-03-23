@@ -469,22 +469,19 @@ void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, 
 
 void tc_software_renderer_push_draw_command(tc_Renderer *renderer, tc_DrawCommand command)
 {
-    tc_CommandBuffer *buffer = &renderer->command_buffer;
-    ASSERT((buffer->count + 1) < COMMAND_BUFFER_MAX);
-    buffer->commands[buffer->count++] = command;
+    array_push(renderer->command_buffer_darr, command);
 }
 
 void tc_software_renderer_begin(tc_Renderer *renderer)
 {
-    renderer->command_buffer.count = 0;
+    array_clear(renderer->command_buffer_darr);
 }
 
 inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *renderer, rect2d clipping_rect)
 {
-    tc_CommandBuffer *buffer = &renderer->command_buffer;
-    for(u32 command_index = 0; command_index < buffer->count; ++command_index)
+    for(u32 command_index = 0; command_index < array_size(renderer->command_buffer_darr); ++command_index)
     {
-        tc_DrawCommand *command = buffer->commands + command_index;
+        tc_DrawCommand *command = renderer->command_buffer_darr + command_index;
         tc_software_renderer_draw_array(renderer, command->texture, clipping_rect, command->transform, command->vertices, command->vertex_count);
     }
 }
@@ -527,7 +524,5 @@ void tc_software_renderer_end(tc_Renderer *renderer)
             
         }
     }
-
     thread_queue_end(renderer->thread_queue);
-
 }

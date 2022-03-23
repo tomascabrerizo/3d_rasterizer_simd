@@ -13,37 +13,42 @@ struct ArrayHeader
 };
 
 #define array_header(array) ((ArrayHeader *)(array) - 1)
-#define array_size(array) array_header(array)->size
-#define array_capacity(array) array_header(array)->capacity
-#define array_push(array, item) do{ array_may_grow(array, sizeof(*array)); (array)[array_header(array)->size++] = (item); }while(0)
-#define array_pop(array)
-#define array_clear(array) (array_header(array)->size = 0)
+#define array_size(array) ((array) ? array_header(array)->size : 0) 
+#define array_capacity(array) ((array) ? array_header(array)->capacity : 0)
 
-#define array_free(array) (free((u8 *)array - sizeof(ArrayHeader)), array = 0;)
+#define array_may_grow(array, count) ((!(array) || (array_size(array) + (count)) > array_capacity(array)) ? ((array) = array_grow_wrapper((array), sizeof(*(array))), 0) : 0)
+#define array_push(array, item) (array_may_grow(array, 1), (array)[array_header(array)->size++] = (item))
+#define array_pop(array) (array_header(array)->size--, (array)[array_header(array)->size]) 
+#define array_clear(array) ((array) ? array_header(array)->size = 0 : 0)
+#define array_free(array) (free((void *)array_header(array)), array = 0)
 
-inline void array_grow(void *array, size_t element_size)
+template <typename T>
+static T *array_grow_wrapper(T *array, size_t element_size)
 {
-    if(!array)
-    {
-        u32 capacity = 4;
-        array = realloc(array, capacity * element_size + sizeof(ArrayHeader));
-        array_header(array)->capacity = capacity;
-        array_header(array)->size = 0;
-    }
-    else
-    {
-        u32 new_capacity = array_header(array)->capacity * 2;
-        array = realloc((u8 *)array - sizeof(ArrayHeader), new_capacity * element_size + sizeof(ArrayHeader));
-        array_header(array)->capacity = new_capacity;
-    }
+    return (T *)array_grow((void *)array, element_size);
 }
 
-inline void array_may_grow(void *array, size_t element_size)
+void *array_grow(void *array, size_t element_size)
 {
-    if(!array || (array_size(array) + element_size) >= array_capacity(array))
+    ArrayHeader debug = {};
+    (void)debug;
+
+    void *base = 0; 
+    u32 capacity = array_capacity(array) * 2;
+
+    if(capacity < 4)
     {
-        array_grow(array, element_size);
+        capacity = 4; 
     }
+    base = realloc((array) ? (void *)array_header(array) : 0, capacity * element_size + sizeof(ArrayHeader));
+    base = (u8 *)base + sizeof(ArrayHeader);
+    
+    array_header(base)->capacity = capacity;
+    if(!array)
+    {
+        array_header(base)->size = 0;
+    }
+    return base;
 }
 
 #endif // DATA_STRUCTURES_H

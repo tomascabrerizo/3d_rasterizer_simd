@@ -30,21 +30,15 @@ struct tc_DrawCommand
     u32 vertex_count;
 };
 
-#define COMMAND_BUFFER_MAX 256
-struct tc_CommandBuffer
-{
-    tc_DrawCommand commands[COMMAND_BUFFER_MAX];
-    u32 count;
-};
-
 // TODO: ThreadQueue needs to be refactor
 struct ThreadQueue;
 struct tc_Renderer
 {
     void *platform;
     tc_BackBuffer backbuffer;
-    tc_CommandBuffer command_buffer;
     ThreadQueue *thread_queue;
+
+    tc_DrawCommand *command_buffer_darr;
 };
 
 tc_Renderer *tc_platform_create_software_renderer(tc_Window *window);

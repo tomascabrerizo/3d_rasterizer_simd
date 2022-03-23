@@ -107,6 +107,11 @@ void thread_queue_create(ThreadQueue *thread_queue)
     }
 }
 
+void mod(int *i)
+{
+    *i = 543;
+}
+
 tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
 {
     thread_queue_create(&global_win32_thread_queue);
@@ -114,6 +119,7 @@ tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
     tc_Renderer *renderer = (tc_Renderer *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(tc_Renderer));
     renderer->platform = (tc_BackBufferWin32 *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(tc_BackBufferWin32));
     renderer->thread_queue = &global_win32_thread_queue;
+    renderer->command_buffer_darr = 0;
 
     tc_BackBufferWin32 *buffer = (tc_BackBufferWin32 *)renderer->platform;
     
@@ -142,13 +148,7 @@ tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
     renderer->backbuffer.height = buffer->height;
     renderer->backbuffer.pitch = buffer->width * 4;
     
-    //tc_CommandBuffer *cmd_buffer = 0;
-    //tc_CommandBuffer test;
-    //array_push(cmd_buffer, test);
-    //printf("capacity: %d, size: %d\n", array_size(cmd_buffer), array_capacity(cmd_buffer));
-
     return renderer;
-
 }
 
 void tc_platform_destroy_software_renderer(tc_Renderer *renderer)
