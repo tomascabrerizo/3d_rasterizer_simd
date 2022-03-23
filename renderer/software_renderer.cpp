@@ -7,17 +7,6 @@
 
 #include <emmintrin.h>
 
-void tc_software_renderer_clear(tc_Renderer *renderer, u32 color)
-{
-    u32 width = renderer->backbuffer.width;
-    u32 height = renderer->backbuffer.height;
-    tc_software_renderer_draw_rect(renderer, 0, 0, width, height, color);
-    for(u32 i = 0; i < height*width; ++i)
-    {
-        renderer->backbuffer.depth[i] = f32_infinity();
-    }
-}
-
 void tc_software_renderer_draw_rect(tc_Renderer *renderer, u32 x, u32 y, u32 width, u32 height, u32 color)
 {
     u8 *row = (u8 *)renderer->backbuffer.pixels + (y * renderer->backbuffer.pitch);
@@ -32,55 +21,68 @@ void tc_software_renderer_draw_rect(tc_Renderer *renderer, u32 x, u32 y, u32 wid
     }
 }
 
+void tc_software_renderer_clear(tc_Renderer *renderer, u32 color)
+{
+    u32 width = renderer->backbuffer.width;
+    u32 height = renderer->backbuffer.height;
+    tc_software_renderer_draw_rect(renderer, 0, 0, width, height, color);
+    for(u32 i = 0; i < height*width; ++i)
+    {
+        renderer->backbuffer.depth[i] = f32_infinity();
+    }
+
+    array_clear(renderer->command_buffer_darr);
+}
+
 tc_Vertex cube[36] = {
     //  - position            - color                   - texture coord
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
-                                                                  
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }}, 
-    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
-                                                                  
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
-    {{-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
-                                                                  
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
-                                                                  
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
-                                                                  
-    {{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }}
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
+
+    {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }}, 
+    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
+
+    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
+
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }}
 };
 
-inline v3 perspective_divide(v4 v)
+inline v4 perspective_divide(v4 v)
 {
     f32 inv_w = 1 / v.w;
-    v3 result = {v.x * inv_w, v.y * inv_w, v.w};
+    v4 result = {v.x * inv_w, v.y * inv_w, v.z * inv_w, v.w};
     return result;
 }
 
@@ -93,8 +95,8 @@ inline float edge_test(float x0, float y0, float x1, float y1, float px, float p
 
 inline void sort_vertices(tc_Vertex **min, tc_Vertex **mid, tc_Vertex **max)
 {
-    v3 edge0 = (*max)->position - (*min)->position;
-    v3 edge1 = (*mid)->position - (*min)->position;
+    v4 edge0 = (*max)->position - (*min)->position;
+    v4 edge1 = (*mid)->position - (*min)->position;
     
     if((edge0.x * edge1.y - edge0.y * edge1.x) < 0)
     {
@@ -117,9 +119,9 @@ void tc_software_renderer_draw_triangle_slow(tc_Renderer *renderer, tc_Bitmap *t
     float x2 = vertex2->position.x;
     float y2 = vertex2->position.y;
 
-    f32 one_over_z_0 = 1.0f / vertex0->position.z;
-    f32 one_over_z_1 = 1.0f / vertex1->position.z;
-    f32 one_over_z_2 = 1.0f / vertex2->position.z;
+    f32 one_over_z_0 = 1.0f / vertex0->position.w;
+    f32 one_over_z_1 = 1.0f / vertex1->position.w;
+    f32 one_over_z_2 = 1.0f / vertex2->position.w;
 
     f32 x_coord_over_z_0 = vertex0->coord.x * one_over_z_0;
     f32 y_coord_over_z_0 = vertex0->coord.y * one_over_z_0;
@@ -221,7 +223,7 @@ struct tc_Edge
     __m128 one_step_y;
 };
 
-static inline tc_Edge create_edge(v3 v0, v3 v1, v3 p, u32 step_size_x, u32 step_size_y, __m128 *w_row)
+static inline tc_Edge create_edge(v4 v0, v4 v1, v4 p, u32 step_size_x, u32 step_size_y, __m128 *w_row)
 {
     tc_Edge result = {};
 
@@ -255,15 +257,15 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
 
     float x0 = v0.position.x;
     float y0 = v0.position.y;
-    float z0 = v0.position.z;
+    float z0 = v0.position.w;
     
     float x1 = v1.position.x;
     float y1 = v1.position.y;
-    float z1 = v1.position.z;
+    float z1 = v1.position.w;
     
     float x2 = v2.position.x;
     float y2 = v2.position.y;
-    float z2 = v2.position.z;
+    float z2 = v2.position.w;
     
     
     rect2d render_rect;
@@ -326,7 +328,7 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     __m128 w1_row;
     __m128 w2_row;
 
-    v3 p = _v3((f32)render_rect.min.x, (f32)render_rect.min.y, 1.0f);
+    v4 p = _v4((f32)render_rect.min.x, (f32)render_rect.min.y, 0.0f, 0.0f);
     tc_Edge edge12 = create_edge(vertex1->position, vertex2->position, p, x_step_size, y_step_size, &w0_row);
     tc_Edge edge20 = create_edge(vertex2->position, vertex0->position, p, x_step_size, y_step_size, &w1_row);
     tc_Edge edge01 = create_edge(vertex0->position, vertex1->position, p, x_step_size, y_step_size, &w2_row);
@@ -437,7 +439,12 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     }
 }
 
-void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, m4 transform, tc_Vertex *vertices, u32 count)
+static void clip_triangle_axis(tc_VertexList *vertex_list, u32 axis, tc_VertexList *result)
+{
+    // TODO: clipping not implemented!  
+}
+
+void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, m4 transform, tc_Vertex *vertices, u32 count)
 {
     for(u32 i = 0; i < count; i+=3)
     {
@@ -445,26 +452,54 @@ void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, 
         tc_Vertex vertex1 = vertices[i + 1];
         tc_Vertex vertex2 = vertices[i + 2];
         
-        v4 vertex0_4 = transform * to_v4(vertex0.position);
-        v4 vertex1_4 = transform * to_v4(vertex1.position);
-        v4 vertex2_4 = transform * to_v4(vertex2.position);
+        vertex0.position = transform * vertex0.position;
+        vertex1.position = transform * vertex1.position;
+        vertex2.position = transform * vertex2.position;
+
+        tc_VertexList vertex_list = {};
+        tc_VertexList tmp_list = {};
+        
+        tmp_list.vertex[tmp_list.count++] = vertex0;
+        tmp_list.vertex[tmp_list.count++] = vertex1;
+        tmp_list.vertex[tmp_list.count++] = vertex2;
+
+        clip_triangle_axis(&tmp_list, 0, &vertex_list);
+        tmp_list.count = 0;
+        clip_triangle_axis(&vertex_list, 1, &tmp_list);
+        vertex_list.count = 0;
+        clip_triangle_axis(&tmp_list, 2, &vertex_list);
+        tmp_list.count = 0;
 
         f32 hw = (f32)renderer->backbuffer.width / 2.0f;
         f32 hh = (f32)renderer->backbuffer.height / 2.0f;
+        // TODO: this will be a for to loop in the new clipped vertices
+        {
+            vertex0.position = perspective_divide(vertex0.position);
+            vertex1.position = perspective_divide(vertex1.position);
+            vertex2.position = perspective_divide(vertex2.position);
 
-        vertex0.position = perspective_divide(vertex0_4);
-        vertex1.position = perspective_divide(vertex1_4);
-        vertex2.position = perspective_divide(vertex2_4);
-
-        vertex0.position.x = vertex0.position.x * hw + hw; 
-        vertex0.position.y = -vertex0.position.y * hh + hh; 
-        vertex1.position.x = vertex1.position.x * hw + hw;
-        vertex1.position.y = -vertex1.position.y * hh + hh; 
-        vertex2.position.x = vertex2.position.x * hw + hw; 
-        vertex2.position.y = -vertex2.position.y * hh + hh; 
-
-        tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &vertex0, &vertex1, &vertex2);
+            vertex0.position.x = vertex0.position.x * hw + hw; 
+            vertex0.position.y = -vertex0.position.y * hh + hh; 
+            vertex1.position.x = vertex1.position.x * hw + hw;
+            vertex1.position.y = -vertex1.position.y * hh + hh; 
+            vertex2.position.x = vertex2.position.x * hw + hw; 
+            vertex2.position.y = -vertex2.position.y * hh + hh; 
+            
+            // TODO: back face culling!
+            tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &vertex0, &vertex1, &vertex2);
+        }
     }
+}
+
+void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, m4 transform, tc_Vertex *vertices, u32 vertices_cout)
+{
+        tc_DrawCommand draw_command;
+        draw_command.type = TC_DCMD_VERTEX_ARRAY;
+        draw_command.vertex_array.texture = texture;
+        draw_command.vertex_array.vertices = vertices;
+        draw_command.vertex_array.vertex_count = vertices_cout;
+        draw_command.vertex_array.transform = transform;
+        tc_software_renderer_push_draw_command(renderer, draw_command);
 }
 
 void tc_software_renderer_push_draw_command(tc_Renderer *renderer, tc_DrawCommand command)
@@ -474,7 +509,6 @@ void tc_software_renderer_push_draw_command(tc_Renderer *renderer, tc_DrawComman
 
 void tc_software_renderer_begin(tc_Renderer *renderer)
 {
-    array_clear(renderer->command_buffer_darr);
 }
 
 inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *renderer, rect2d clipping_rect)
@@ -482,7 +516,17 @@ inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *rendere
     for(u32 command_index = 0; command_index < array_size(renderer->command_buffer_darr); ++command_index)
     {
         tc_DrawCommand *command = renderer->command_buffer_darr + command_index;
-        tc_software_renderer_draw_array(renderer, command->texture, clipping_rect, command->transform, command->vertices, command->vertex_count);
+        switch(command->type)
+        {
+            case TC_DCMD_VERTEX_ARRAY:
+            {
+                tc_VertexArray *vertex_array = &command->vertex_array;
+                tc_software_renderer_draw_clipped_array(renderer, vertex_array->texture, clipping_rect, vertex_array->transform, vertex_array->vertices, vertex_array->vertex_count);
+            }break;
+            case TC_DCMD_RECT:
+            {
+            }break;
+        }
     }
 }
 
@@ -498,7 +542,7 @@ void render_work_function(void *param)
     tc_software_renderer_draw_command_buffer(render_work->renderer, render_work->clipping_rect);
 }
 
-void tc_software_renderer_end(tc_Renderer *renderer)
+void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
 {
     f32 width = (f32)renderer->backbuffer.width;
     f32 height = (f32)renderer->backbuffer.height;
@@ -525,4 +569,6 @@ void tc_software_renderer_end(tc_Renderer *renderer)
         }
     }
     thread_queue_end(renderer->thread_queue);
+
+    win32_sofware_renderer_swap_buffers(renderer, window);
 }

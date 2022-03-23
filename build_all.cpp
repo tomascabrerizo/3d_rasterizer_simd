@@ -42,33 +42,20 @@ int main()
             }
         }
         
-        tc_renderer_clear(renderer, 0xFF222222);
 
         static f32 angle = 0;
         m4 rotation = m4_rotate_y(f32_rad(angle)) * m4_rotate_z(f32_rad(angle));
         angle += 1.0f;
        
-        tc_DrawCommand draw_command;
-        draw_command.texture = &texture;
-        draw_command.vertices = cube;
-        draw_command.vertex_count = 36;
-        
-        tc_software_renderer_begin(renderer);
+        tc_renderer_clear(renderer, 0xFF222222);
 
-        draw_command.transform = projection * translation1 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        draw_command.transform = projection * translation2 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        draw_command.transform = projection * translation3 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        draw_command.transform = projection * translation4 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        draw_command.transform = projection * translation5 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        draw_command.transform = projection * translation6 * rotation;
-        tc_software_renderer_push_draw_command(renderer, draw_command);
-        
-        tc_software_renderer_end(renderer);
+        // TODO: maybe be able to set somthing like uniforms???
+        tc_renderer_draw_array(renderer, &texture, projection * translation1 * rotation, cube, 36);
+        tc_renderer_draw_array(renderer, &texture, projection * translation2 * rotation, cube, 36);
+        tc_renderer_draw_array(renderer, &texture, projection * translation3 * rotation, cube, 36);
+        tc_renderer_draw_array(renderer, &texture, projection * translation4 * rotation, cube, 36);
+        tc_renderer_draw_array(renderer, &texture, projection * translation5 * rotation, cube, 36);
+        tc_renderer_draw_array(renderer, &texture, projection * translation6 * rotation, cube, 36);
 
         tc_renderer_swap_buffers(renderer, window);
 

@@ -20,7 +20,7 @@ struct ThreadWork
     void *attributes;
 };
 
-#define WIN32_THREAD_COUNT 8
+#define WIN32_THREAD_COUNT 7
 struct ThreadQueue
 {
     HANDLE threads[WIN32_THREAD_COUNT];
@@ -160,7 +160,7 @@ void tc_platform_destroy_software_renderer(tc_Renderer *renderer)
     HeapFree(GetProcessHeap(), 0, renderer);
 }
 
-void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
+void win32_sofware_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
 {
     tc_BackBufferWin32 *win32_buffer = (tc_BackBufferWin32 *)renderer->platform;
     HDC dc = GetDC(window->handle);

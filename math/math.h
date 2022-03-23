@@ -52,6 +52,12 @@ inline v2 operator-(v2 a, v2 b)
     return result;
 }
 
+inline v2 v2_lerp(v2 a, v2 b, f32 t)
+{
+    v2 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t)};
+    return result;
+}
+
 //
 // vector3 functions
 //
@@ -116,6 +122,12 @@ inline f32 v3_length_sqr(v3 a)
 inline f32 v3_length(v3 a)
 {
     f32 result = f32_sqrt((a.x * a.x) + (a.y * a.y) + (a.z * a.z));
+    return result;
+}
+
+inline v3 v3_lerp(v3 a, v3 b, f32 t)
+{
+    v3 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t), a.z * t + b.z * (1.0f-t)};
     return result;
 }
 
@@ -188,6 +200,12 @@ inline v4 operator*(m4 b, v4 a)
     result.y = a.x * b.m[1][0] + a.y * b.m[1][1] + a.z * b.m[1][2] + a.w * b.m[1][3];
     result.z = a.x * b.m[2][0] + a.y * b.m[2][1] + a.z * b.m[2][2] + a.w * b.m[2][3];
     result.w = a.x * b.m[3][0] + a.y * b.m[3][1] + a.z * b.m[3][2] + a.w * b.m[3][3];
+    return result;
+}
+
+inline v4 v4_lerp(v4 a, v4 b, f32 t)
+{
+    v4 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t), a.z * t + b.z * (1.0f-t), a.w * t + b.w * (1.0f-t)};
     return result;
 }
 
