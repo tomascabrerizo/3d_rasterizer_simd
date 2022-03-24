@@ -10,10 +10,10 @@
 
 struct tc_Bitmap;
 
-#define MAX_VERTEX_LIST 10
-struct tc_VertexList
+#define MAX_VERTEX_PER_POLYGON 10
+struct tc_Poligon
 {
-    tc_Vertex vertex[MAX_VERTEX_LIST];
+    tc_Vertex vertex[MAX_VERTEX_PER_POLYGON];
     u32 count;
 };
 

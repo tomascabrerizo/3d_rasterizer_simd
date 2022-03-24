@@ -439,13 +439,127 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     }
 }
 
-static void clip_triangle_axis(tc_VertexList *vertex_list, u32 axis, tc_VertexList *result)
+void copy_polygon(tc_Poligon *dest, tc_Poligon *src)
 {
-    // TODO: clipping not implemented!  
+    dest->count = src->count;
+    for(u32 i = 0; i < dest->count; ++i)
+    {
+        dest->vertex[i] = src->vertex[i];
+    }
+}
+
+static tc_Vertex vertex_lerp(tc_Vertex a, tc_Vertex b, f32 t)
+{
+    tc_Vertex result;
+    result.position = v4_lerp(a.position, b.position, t);
+    result.color = v4_lerp(a.color, b.color, t);
+    result.coord = v2_lerp(a.coord, b.coord, t);
+    return result;
+}
+
+#define TC_W_CLIPPING_PLANE 0.000001f
+void clip_polygon_on_w_axis(tc_Poligon *face, tc_Poligon *result)
+{
+    tc_Vertex *previus_vertex = &face->vertex[face->count - 1];
+    s8 previus_dot = previus_vertex->position.w < TC_W_CLIPPING_PLANE ? -1 : 1;
+    tc_Vertex *current_vertex = &face->vertex[0];
+
+    while(current_vertex != (face->vertex + face->count))
+    {
+        s8  current_dot = current_vertex->position.w < TC_W_CLIPPING_PLANE ? -1 : 1;
+        if(previus_dot * current_dot < 0)
+        {
+            f32 t = (TC_W_CLIPPING_PLANE - previus_vertex->position.w) / (previus_vertex->position.w - current_vertex->position.w);    
+            tc_Vertex intersection = vertex_lerp(*previus_vertex, *current_vertex, t);
+            result->vertex[result->count++] = intersection; 
+        }
+
+        if(current_dot > 0)
+        {
+            result->vertex[result->count++] = *current_vertex;
+        }
+
+        previus_dot = current_dot;
+        previus_vertex = current_vertex;
+        current_vertex++;
+    }
+}
+
+void clip_polygon_on_axis(tc_Poligon *face, tc_Poligon *result, u32 axis)
+{
+    if(face->count == 0)
+    {
+        return;
+    }
+
+    tc_Vertex *previus_vertex = &face->vertex[face->count - 1];
+    s8 previus_dot = V4_AXIS(previus_vertex->position, axis) <= previus_vertex->position.w ? 1 : -1;
+    tc_Vertex *current_vertex = &face->vertex[0];
+
+    while(current_vertex != (face->vertex + face->count))
+    {
+        s8  current_dot = V4_AXIS(current_vertex->position, axis) <= current_vertex->position.w ? 1 : -1;
+        if(previus_dot * current_dot < 0)
+        {
+            f32 t = (previus_vertex->position.w - V4_AXIS(previus_vertex->position, axis)) / 
+                    ((previus_vertex->position.w - V4_AXIS(previus_vertex->position, axis)) - (current_vertex->position.w - V4_AXIS(current_vertex->position, axis)));
+
+            tc_Vertex intersection = vertex_lerp(*previus_vertex, *current_vertex, t);
+            result->vertex[result->count++] = intersection; 
+        }
+
+        if(current_dot > 0)
+        {
+            result->vertex[result->count++] = *current_vertex;
+        }
+
+        previus_dot = current_dot;
+        previus_vertex = current_vertex;
+        current_vertex++;
+    }
+    
+    copy_polygon(face, result);
+    result->count = 0;
+
+    if(face->count == 0)
+    {
+        return;
+    }
+    
+    // clip against the oposite plane
+    
+    previus_vertex = &face->vertex[face->count - 1];
+    previus_dot = -V4_AXIS(previus_vertex->position, axis) <= previus_vertex->position.w ? 1 : -1;
+    current_vertex = &face->vertex[0];
+    
+    while(current_vertex != (face->vertex + face->count))
+    {
+        s8  current_dot = -V4_AXIS(current_vertex->position, axis) <= current_vertex->position.w ? 1 : -1;
+        if(previus_dot * current_dot < 0)
+        {
+            f32 t = (previus_vertex->position.w + V4_AXIS(previus_vertex->position, axis)) / 
+                    ((previus_vertex->position.w + V4_AXIS(previus_vertex->position, axis)) - (current_vertex->position.w + V4_AXIS(current_vertex->position, axis)));
+
+            tc_Vertex intersection = vertex_lerp(*previus_vertex, *current_vertex, t);
+            result->vertex[result->count++] = intersection; 
+        }
+
+        if(current_dot > 0)
+        {
+            result->vertex[result->count++] = *current_vertex;
+        }
+
+        previus_dot = current_dot;
+        previus_vertex = current_vertex;
+        current_vertex++;
+    }
 }
 
 void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, m4 transform, tc_Vertex *vertices, u32 count)
 {
+    f32 hw = (f32)renderer->backbuffer.width / 2.0f;
+    f32 hh = (f32)renderer->backbuffer.height / 2.0f;
+    
     for(u32 i = 0; i < count; i+=3)
     {
         tc_Vertex vertex0 = vertices[i + 0];
@@ -455,38 +569,46 @@ void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *t
         vertex0.position = transform * vertex0.position;
         vertex1.position = transform * vertex1.position;
         vertex2.position = transform * vertex2.position;
-
-        tc_VertexList vertex_list = {};
-        tc_VertexList tmp_list = {};
         
-        tmp_list.vertex[tmp_list.count++] = vertex0;
-        tmp_list.vertex[tmp_list.count++] = vertex1;
-        tmp_list.vertex[tmp_list.count++] = vertex2;
+        // TODO: back face culling!
 
-        clip_triangle_axis(&tmp_list, 0, &vertex_list);
-        tmp_list.count = 0;
-        clip_triangle_axis(&vertex_list, 1, &tmp_list);
-        vertex_list.count = 0;
-        clip_triangle_axis(&tmp_list, 2, &vertex_list);
-        tmp_list.count = 0;
-
-        f32 hw = (f32)renderer->backbuffer.width / 2.0f;
-        f32 hh = (f32)renderer->backbuffer.height / 2.0f;
-        // TODO: this will be a for to loop in the new clipped vertices
+        tc_Poligon poligon = {};
+        tc_Poligon temp_poligon = {};
+    
+        poligon.vertex[poligon.count++] = vertex0;
+        poligon.vertex[poligon.count++] = vertex1;
+        poligon.vertex[poligon.count++] = vertex2;
+        
+        clip_polygon_on_w_axis(&poligon, &temp_poligon);
+        poligon.count = 0;
+        clip_polygon_on_axis(&temp_poligon, &poligon, 0);
+        temp_poligon.count = 0;
+        clip_polygon_on_axis(&poligon, &temp_poligon, 1);
+        poligon.count = 0;
+        clip_polygon_on_axis(&temp_poligon, &poligon, 2);
+        temp_poligon.count = 0;
+        
+        if(poligon.count > 0)
         {
-            vertex0.position = perspective_divide(vertex0.position);
-            vertex1.position = perspective_divide(vertex1.position);
-            vertex2.position = perspective_divide(vertex2.position);
+            for(u32 j = 1; j < poligon.count-1; ++j)
+            {
+                tc_Vertex v0 = poligon.vertex[0]; 
+                tc_Vertex v1 = poligon.vertex[j]; 
+                tc_Vertex v2 = poligon.vertex[j+1]; 
 
-            vertex0.position.x = vertex0.position.x * hw + hw; 
-            vertex0.position.y = -vertex0.position.y * hh + hh; 
-            vertex1.position.x = vertex1.position.x * hw + hw;
-            vertex1.position.y = -vertex1.position.y * hh + hh; 
-            vertex2.position.x = vertex2.position.x * hw + hw; 
-            vertex2.position.y = -vertex2.position.y * hh + hh; 
-            
-            // TODO: back face culling!
-            tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &vertex0, &vertex1, &vertex2);
+                v0.position = perspective_divide(v0.position);
+                v1.position = perspective_divide(v1.position);
+                v2.position = perspective_divide(v2.position);
+
+                v0.position.x =  v0.position.x * hw + hw; 
+                v0.position.y = -v0.position.y * hh + hh; 
+                v1.position.x =  v1.position.x * hw + hw;
+                v1.position.y = -v1.position.y * hh + hh; 
+                v2.position.x =  v2.position.x * hw + hw; 
+                v2.position.y = -v2.position.y * hh + hh; 
+                
+                tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &v0, &v1, &v2);
+            }
         }
     }
 }
@@ -560,7 +682,7 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
     {
         for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
         {
-            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(0, 0));
+            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(4, 4));
             
             render_work[tile_y][tile_x].renderer = renderer;
             ThreadWork work = {render_work_function, (void *)&render_work[tile_y][tile_x]};

@@ -52,9 +52,15 @@ inline v2 operator-(v2 a, v2 b)
     return result;
 }
 
+inline v2 operator*(v2 a, f32 v)
+{
+    v2 result = {a.x * v, a.y * v};
+    return result;
+}
+
 inline v2 v2_lerp(v2 a, v2 b, f32 t)
 {
-    v2 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t)};
+    v2 result = a * (1-t) + b * t;
     return result;
 }
 
@@ -127,7 +133,7 @@ inline f32 v3_length(v3 a)
 
 inline v3 v3_lerp(v3 a, v3 b, f32 t)
 {
-    v3 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t), a.z * t + b.z * (1.0f-t)};
+    v3 result = a * (1-t) + b * t; 
     return result;
 }
 
@@ -150,6 +156,8 @@ inline v3 operator*(m4 b, v3 a)
 //
 // vector4 functions
 //
+
+#define V4_AXIS(v, i) ((f32 *)&(v))[i]
 
 inline v4 _v4(f32 x, f32 y, f32 z, f32 w)
 {
@@ -205,7 +213,7 @@ inline v4 operator*(m4 b, v4 a)
 
 inline v4 v4_lerp(v4 a, v4 b, f32 t)
 {
-    v4 result = {a.x * t + b.x * (1.0f-t), a.y * t + b.y * (1.0f-t), a.z * t + b.z * (1.0f-t), a.w * t + b.w * (1.0f-t)};
+    v4 result = a * (1 - t) + b * t;
     return result;
 }
 
