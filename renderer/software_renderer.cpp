@@ -36,20 +36,28 @@ void tc_software_renderer_clear(tc_Renderer *renderer, u32 color)
 
 tc_Vertex cube[36] = {
     //  - position            - color                   - texture coord
+    
+    //-------------- front
+    
     {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
     {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+    
     {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
-    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
     {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
 
+    //-------------- front 
+    
     {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }}, 
     {{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
     {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
     {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 0.0f }},
-
+    
+    //-------------- left
+    
     {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
     {{-0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
     {{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
@@ -57,12 +65,16 @@ tc_Vertex cube[36] = {
     {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
     {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
 
+    //-------------- right
+
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }}, 
-    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
     {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
     {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
+
+    //-------------- bottom
 
     {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
     {{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
@@ -71,12 +83,14 @@ tc_Vertex cube[36] = {
     {{-0.5f, -0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
     {{-0.5f, -0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
 
-    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
-    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    //-------------- top
+
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
+    {{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, { 1.0f, 1.0f }},
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
     {{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f}, { 1.0f, 0.0f }},
-    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }},
-    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }}
+    {{-0.5f,  0.5f, -0.5f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
+    {{-0.5f,  0.5f,  0.5f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, { 0.0f, 0.0f }}
 };
 
 inline v4 perspective_divide(v4 v)
@@ -93,23 +107,8 @@ inline float edge_test(float x0, float y0, float x1, float y1, float px, float p
     return (px - x0) * dy - (py - y0) * dx;
 }
 
-inline void sort_vertices(tc_Vertex **min, tc_Vertex **mid, tc_Vertex **max)
-{
-    v4 edge0 = (*max)->position - (*min)->position;
-    v4 edge1 = (*mid)->position - (*min)->position;
-    
-    if((edge0.x * edge1.y - edge0.y * edge1.x) < 0)
-    {
-        tc_Vertex *temp = *mid;
-        *mid = *max;
-        *max = temp;
-    }
-}
-
 void tc_software_renderer_draw_triangle_slow(tc_Renderer *renderer, tc_Bitmap *texture, tc_Vertex *vertex0, tc_Vertex *vertex1, tc_Vertex *vertex2)
 {
-    sort_vertices(&vertex0, &vertex1, &vertex2);
-
     tc_BackBuffer *buffer = &renderer->backbuffer;
 
     float x0 = vertex0->position.x;
@@ -244,16 +243,14 @@ static inline tc_Edge create_edge(v4 v0, v4 v1, v4 p, u32 step_size_x, u32 step_
     return result;
 }
 
-void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, tc_Vertex *vertex0, tc_Vertex *vertex1, tc_Vertex *vertex2)
+void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, tc_Vertex vertex0, tc_Vertex vertex1, tc_Vertex vertex2)
 {
-    sort_vertices(&vertex0, &vertex1, &vertex2);
-
     tc_BackBuffer *buffer = &renderer->backbuffer;
     u32 *texture_pixel = (u32 *)texture->pixels;
     
-    tc_Vertex v0 = *vertex0;
-    tc_Vertex v1 = *vertex1;
-    tc_Vertex v2 = *vertex2;
+    tc_Vertex v0 = vertex0;
+    tc_Vertex v1 = vertex1;
+    tc_Vertex v2 = vertex2;
 
     float x0 = v0.position.x;
     float y0 = v0.position.y;
@@ -329,9 +326,9 @@ void tc_software_renderer_draw_triangle_fast(tc_Renderer *renderer, tc_Bitmap *t
     __m128 w2_row;
 
     v4 p = _v4((f32)render_rect.min.x, (f32)render_rect.min.y, 0.0f, 0.0f);
-    tc_Edge edge12 = create_edge(vertex1->position, vertex2->position, p, x_step_size, y_step_size, &w0_row);
-    tc_Edge edge20 = create_edge(vertex2->position, vertex0->position, p, x_step_size, y_step_size, &w1_row);
-    tc_Edge edge01 = create_edge(vertex0->position, vertex1->position, p, x_step_size, y_step_size, &w2_row);
+    tc_Edge edge12 = create_edge(v1.position, v2.position, p, x_step_size, y_step_size, &w0_row);
+    tc_Edge edge20 = create_edge(v2.position, v0.position, p, x_step_size, y_step_size, &w1_row);
+    tc_Edge edge01 = create_edge(v0.position, v1.position, p, x_step_size, y_step_size, &w2_row);
     
     __m128 inv_area = _mm_set_ps1(1.0f / edge_test(x0, y0, x1, y1, x2, y2));
     
@@ -457,34 +454,6 @@ static tc_Vertex vertex_lerp(tc_Vertex a, tc_Vertex b, f32 t)
     return result;
 }
 
-#define TC_W_CLIPPING_PLANE 0.000001f
-void clip_polygon_on_w_axis(tc_Poligon *face, tc_Poligon *result)
-{
-    tc_Vertex *previus_vertex = &face->vertex[face->count - 1];
-    s8 previus_dot = previus_vertex->position.w < TC_W_CLIPPING_PLANE ? -1 : 1;
-    tc_Vertex *current_vertex = &face->vertex[0];
-
-    while(current_vertex != (face->vertex + face->count))
-    {
-        s8  current_dot = current_vertex->position.w < TC_W_CLIPPING_PLANE ? -1 : 1;
-        if(previus_dot * current_dot < 0)
-        {
-            f32 t = (TC_W_CLIPPING_PLANE - previus_vertex->position.w) / (previus_vertex->position.w - current_vertex->position.w);    
-            tc_Vertex intersection = vertex_lerp(*previus_vertex, *current_vertex, t);
-            result->vertex[result->count++] = intersection; 
-        }
-
-        if(current_dot > 0)
-        {
-            result->vertex[result->count++] = *current_vertex;
-        }
-
-        previus_dot = current_dot;
-        previus_vertex = current_vertex;
-        current_vertex++;
-    }
-}
-
 void clip_polygon_on_axis(tc_Poligon *face, tc_Poligon *result, u32 axis)
 {
     if(face->count == 0)
@@ -555,6 +524,75 @@ void clip_polygon_on_axis(tc_Poligon *face, tc_Poligon *result, u32 axis)
     }
 }
 
+static bool vertex_is_inside_3dfrustum(v4 pos)
+{
+    bool result = false;
+    if((f32_abs(pos.x) <= f32_abs(pos.w)) &&
+       (f32_abs(pos.y) <= f32_abs(pos.w)) &&
+       (f32_abs(pos.z) <= f32_abs(pos.w)))
+    {
+        result = true;
+    }
+    return result;
+}
+
+inline void sort_vertices(tc_Vertex **min, tc_Vertex **mid, tc_Vertex **max)
+{
+    v4 edge0 = (*max)->position - (*min)->position;
+    v4 edge1 = (*mid)->position - (*min)->position;
+    
+    if((edge0.x * edge1.y - edge0.y * edge1.x) < 0)
+    {
+        tc_Vertex *temp = *mid;
+        *mid = *max;
+        *max = temp;
+    }
+}
+
+inline void tc_vertex_to_screen(f32 half_width, f32 half_height, tc_Vertex *v0, tc_Vertex *v1, tc_Vertex *v2)
+{
+    f32 hw = half_width;
+    f32 hh = half_height;
+
+    v0->position = perspective_divide(v0->position);
+    v1->position = perspective_divide(v1->position);
+    v2->position = perspective_divide(v2->position);
+
+    v0->position.x =  v0->position.x * hw + hw; 
+    v0->position.y = -v0->position.y * hh + hh; 
+    v1->position.x =  v1->position.x * hw + hw;
+    v1->position.y = -v1->position.y * hh + hh; 
+    v2->position.x =  v2->position.x * hw + hw; 
+    v2->position.y = -v2->position.y * hh + hh; 
+
+}
+
+inline bool tc_vertex_face_culling_test(tc_Vertex v0, tc_Vertex v1, tc_Vertex v2)
+{
+    bool result = true;
+    
+    v3 min = _v3(v0.position.x, v0.position.y, v0.position.z);
+    v3 mid = _v3(v1.position.x, v1.position.y, v1.position.z);
+    v3 max = _v3(v2.position.x, v2.position.y, v2.position.z);
+    v3 culling = v3_cross(max - min, mid - min);
+    result = culling.z > 0;
+
+    return result;
+}
+
+// NOTE: if not face culling vertex need to be sort
+/*{
+    v4 edge0 = v2->position - v0->position;
+    v4 edge1 = v1->position - v0->position;
+
+    if((edge0.x * edge1.y - edge0.y * edge1.x) < 0)
+    {
+        tc_Vertex temp = *v1;
+        *v1= *v2;
+        *v2= temp;
+    }
+}*/
+
 void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *texture, rect2d clipping_rect, m4 transform, tc_Vertex *vertices, u32 count)
 {
     f32 hw = (f32)renderer->backbuffer.width / 2.0f;
@@ -570,17 +608,25 @@ void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *t
         vertex1.position = transform * vertex1.position;
         vertex2.position = transform * vertex2.position;
         
-        // TODO: back face culling!
+        if(vertex_is_inside_3dfrustum(vertex0.position) &&
+           vertex_is_inside_3dfrustum(vertex1.position) &&
+           vertex_is_inside_3dfrustum(vertex2.position))
+        {
+            tc_vertex_to_screen(hw, hh, &vertex0, &vertex1, &vertex2);
+            if(tc_vertex_face_culling_test(vertex0, vertex1, vertex2))
+            {
+                tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, vertex0, vertex1, vertex2);
+            }
+            continue;
+        }
 
         tc_Poligon poligon = {};
         tc_Poligon temp_poligon = {};
     
-        poligon.vertex[poligon.count++] = vertex0;
-        poligon.vertex[poligon.count++] = vertex1;
-        poligon.vertex[poligon.count++] = vertex2;
+        temp_poligon.vertex[temp_poligon.count++] = vertex0;
+        temp_poligon.vertex[temp_poligon.count++] = vertex1;
+        temp_poligon.vertex[temp_poligon.count++] = vertex2;
         
-        clip_polygon_on_w_axis(&poligon, &temp_poligon);
-        poligon.count = 0;
         clip_polygon_on_axis(&temp_poligon, &poligon, 0);
         temp_poligon.count = 0;
         clip_polygon_on_axis(&poligon, &temp_poligon, 1);
@@ -596,18 +642,11 @@ void tc_software_renderer_draw_clipped_array(tc_Renderer *renderer, tc_Bitmap *t
                 tc_Vertex v1 = poligon.vertex[j]; 
                 tc_Vertex v2 = poligon.vertex[j+1]; 
 
-                v0.position = perspective_divide(v0.position);
-                v1.position = perspective_divide(v1.position);
-                v2.position = perspective_divide(v2.position);
-
-                v0.position.x =  v0.position.x * hw + hw; 
-                v0.position.y = -v0.position.y * hh + hh; 
-                v1.position.x =  v1.position.x * hw + hw;
-                v1.position.y = -v1.position.y * hh + hh; 
-                v2.position.x =  v2.position.x * hw + hw; 
-                v2.position.y = -v2.position.y * hh + hh; 
-                
-                tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, &v0, &v1, &v2);
+                tc_vertex_to_screen(hw, hh, &v0, &v1, &v2); 
+                if(tc_vertex_face_culling_test(v0, v1, v2))
+                {
+                    tc_software_renderer_draw_triangle_fast(renderer, texture, clipping_rect, v0, v1, v2);
+                }
             }
         }
     }
@@ -627,10 +666,6 @@ void tc_software_renderer_draw_array(tc_Renderer *renderer, tc_Bitmap *texture, 
 void tc_software_renderer_push_draw_command(tc_Renderer *renderer, tc_DrawCommand command)
 {
     array_push(renderer->command_buffer_darr, command);
-}
-
-void tc_software_renderer_begin(tc_Renderer *renderer)
-{
 }
 
 inline static void tc_software_renderer_draw_command_buffer(tc_Renderer *renderer, rect2d clipping_rect)
@@ -682,7 +717,7 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
     {
         for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
         {
-            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(4, 4));
+            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(0, 0));
             
             render_work[tile_y][tile_x].renderer = renderer;
             ThreadWork work = {render_work_function, (void *)&render_work[tile_y][tile_x]};

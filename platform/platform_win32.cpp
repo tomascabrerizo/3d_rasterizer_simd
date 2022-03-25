@@ -2,6 +2,9 @@
 #include "platform.h"
 #include "window_win32.h"
 
+static u8 win32_DEBUG_key_array[512];
+static s32 win32_DEBUG_window_pos_x;
+static s32 win32_DEBUG_window_pos_y;
 LRESULT CALLBACK win32_window_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
 {
     tc_Event *event = (tc_Event *)GetWindowLongPtr(window, 0);
@@ -16,6 +19,19 @@ LRESULT CALLBACK win32_window_proc(HWND window, UINT message, WPARAM w_param, LP
         {
             event->type = TC_EVENT_CLOSE_WINDOW; 
             event->window.should_close = true;
+        }break;
+        case WM_KEYDOWN:
+        {
+            win32_DEBUG_key_array[(u8)w_param] = 1;
+        }break;
+        case WM_KEYUP:
+        {
+            win32_DEBUG_key_array[(u8)w_param] = 0;
+        }break;
+        case WM_MOVE:
+        {
+            win32_DEBUG_window_pos_x = LOWORD(l_param);
+            win32_DEBUG_window_pos_y = HIWORD(l_param);
         }break;
         default:
         {
@@ -59,6 +75,9 @@ tc_Window *tc_platform_create_window(char *name, int x, int y, int width, int he
                                      WS_VISIBLE|WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
                                      x, y, width, height, 
                                      0, 0, hinstance, 0);
+
+    win32_DEBUG_window_pos_x = x;
+    win32_DEBUG_window_pos_y = y;
     return window;
 }
 
@@ -170,4 +189,27 @@ tc_Bitmap tc_DEBUG_platform_load_bmp_file(char *path)
     bitmap.pitch = (s32)(bitmap.width * 4);
     
     return bitmap;
+}
+
+bool tc_DEBUG_platform_key_down(u8 key)
+{
+    return win32_DEBUG_key_array[key] == 1;
+}
+
+void tc_DEBUG_platform_get_mouse_position(u32 *x, u32 *y)
+{
+    POINT position = {};
+    GetCursorPos(&position);
+    *x = (u32)position.x;
+    *y = (u32)position.y;
+}
+
+void tc_DEBUG_platfrom_relative_mode(tc_Window *window)
+{
+    RECT rect;
+    GetWindowRect(window->handle, &rect);
+    s32 width = rect.right - rect.left;
+    s32 height = rect.bottom - rect.top;
+    SetCursorPos(win32_DEBUG_window_pos_x + width/2, win32_DEBUG_window_pos_y + height/2);
+    ShowCursor(false);
 }

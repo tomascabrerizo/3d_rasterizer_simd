@@ -12,6 +12,11 @@ inline f32 f32_infinity()
     return result;
 }
 
+inline f32 f32_abs(f32 f)
+{
+    return fabsf(f);
+}
+
 inline f32 f32_min_2(f32 f0, f32 f1)
 {
     return f0 < f1 ? f0 : f1;

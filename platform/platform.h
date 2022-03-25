@@ -11,6 +11,7 @@ enum tc_Event_Type
     TC_EVENT_KEY_UP,
     TC_EVENT_BUTTON_DOWN,
     TC_EVENT_BUTTON_UP,
+    TC_EVENT_MOUSE_MOVE,
 
     TC_EVENT_COUNT,
 };
@@ -28,6 +29,8 @@ struct tc_EventKeyboard
 struct tc_EventMouse
 {
     u32 button;
+    u32 x, y;
+    u32 rel_x, rel_y;
 };
 
 struct tc_Event
@@ -71,5 +74,9 @@ u64 tc_platform_get_cycle_count();
 tc_DebugFile tc_DEBUG_platform_read_file(char *path);
 void tc_DEBUG_platform_free_file(tc_DebugFile *file);
 tc_Bitmap tc_DEBUG_platform_load_bmp_file(char *path);
+
+bool tc_DEBUG_platform_key_down(u8 key);
+void tc_DEBUG_platform_get_mouse_position(u32 *x, u32 *y);
+void tc_DEBUG_platfrom_relative_mode(tc_Window *window);
 
 #endif // TC_PLATFORM_H

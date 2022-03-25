@@ -107,11 +107,6 @@ void thread_queue_create(ThreadQueue *thread_queue)
     }
 }
 
-void mod(int *i)
-{
-    *i = 543;
-}
-
 tc_Renderer *tc_platform_create_software_renderer(tc_Window *window)
 {
     thread_queue_create(&global_win32_thread_queue);
