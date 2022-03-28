@@ -86,6 +86,12 @@ inline v3 operator-(v3 a, v3 b)
     return result;
 }
 
+inline v3 operator-(v3 v)
+{
+    v3 result = {-v.x, -v.y, -v.z};
+    return result;
+}
+
 inline v3 operator*(v3 a, f32 b)
 {
     v3 result = {a.x * b, a.y * b, a.z * b};
@@ -391,25 +397,25 @@ inline m4 m4_ortho(f32 r, f32 l, f32 t, f32 b, f32 f, f32 n)
     return result;
 }
 
-inline m4 m4_look_at(v3 r, v3 u, v3 v, v3 t)
+inline m4 m4_look_at(v3 r, v3 u, v3 f, v3 t)
 {
     m4 result = {};
     result.m[0][0] = r.x;
     result.m[0][1] = r.y;
     result.m[0][2] = r.z;
-    
     result.m[1][0] = u.x;
     result.m[1][1] = u.y;
     result.m[1][2] = u.z;
+    result.m[2][0] = f.x;
+    result.m[2][1] = f.y;
+    result.m[2][2] = f.z;
+
+    result.m[0][3] = v3_dot(-t, r);
+    result.m[1][3] = v3_dot(-t, u);
+    result.m[2][3] = v3_dot(-t, f);
     
-    result.m[2][0] = v.x;
-    result.m[2][1] = v.y;
-    result.m[2][2] = v.z;
-    
-    result.m[0][3] = -t.x;
-    result.m[1][3] = -t.y;
-    result.m[2][3] = -t.z;
     result.m[3][3] = 1.0f;
+
     return result;
 }
 

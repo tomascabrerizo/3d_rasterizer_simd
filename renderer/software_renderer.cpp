@@ -717,7 +717,7 @@ void tc_software_renderer_swap_buffers(tc_Renderer *renderer, tc_Window *window)
     {
         for(u32 tile_x = 0; tile_x < num_tiles_x; ++tile_x)
         {
-            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(0, 0));
+            render_work[tile_y][tile_x].clipping_rect = rect2d_min_dim(_v2((f32)tile_x * tile_dim.x, (f32)tile_y * tile_dim.y), tile_dim - _v2(4, 4));
             
             render_work[tile_y][tile_x].renderer = renderer;
             ThreadWork work = {render_work_function, (void *)&render_work[tile_y][tile_x]};

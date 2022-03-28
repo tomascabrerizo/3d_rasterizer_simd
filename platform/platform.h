@@ -76,7 +76,7 @@ void tc_DEBUG_platform_free_file(tc_DebugFile *file);
 tc_Bitmap tc_DEBUG_platform_load_bmp_file(char *path);
 
 bool tc_DEBUG_platform_key_down(u8 key);
-void tc_DEBUG_platform_get_mouse_position(u32 *x, u32 *y);
-void tc_DEBUG_platfrom_relative_mode(tc_Window *window);
+void tc_DEBUG_platform_get_mouse_position(s32 *x, s32 *y);
+void tc_DEBUG_platfrom_relative_mode(tc_Window *window, s32 *x, s32 *y);
 
 #endif // TC_PLATFORM_H

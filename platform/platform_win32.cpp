@@ -1,10 +1,13 @@
 #include <Windows.h>
+#include <Windowsx.h>
+#include <stdio.h>
 #include "platform.h"
 #include "window_win32.h"
 
+static s32 win32_mouse_x;
+static s32 win32_mouse_y;
+
 static u8 win32_DEBUG_key_array[512];
-static s32 win32_DEBUG_window_pos_x;
-static s32 win32_DEBUG_window_pos_y;
 LRESULT CALLBACK win32_window_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
 {
     tc_Event *event = (tc_Event *)GetWindowLongPtr(window, 0);
@@ -28,10 +31,13 @@ LRESULT CALLBACK win32_window_proc(HWND window, UINT message, WPARAM w_param, LP
         {
             win32_DEBUG_key_array[(u8)w_param] = 0;
         }break;
+        case WM_MOUSEMOVE:
+        {
+            win32_mouse_x = (s32)GET_X_LPARAM(l_param);
+            win32_mouse_y = (s32)GET_Y_LPARAM(l_param);
+        }break;
         case WM_MOVE:
         {
-            win32_DEBUG_window_pos_x = LOWORD(l_param);
-            win32_DEBUG_window_pos_y = HIWORD(l_param);
         }break;
         default:
         {
@@ -76,8 +82,6 @@ tc_Window *tc_platform_create_window(char *name, int x, int y, int width, int he
                                      x, y, width, height, 
                                      0, 0, hinstance, 0);
 
-    win32_DEBUG_window_pos_x = x;
-    win32_DEBUG_window_pos_y = y;
     return window;
 }
 
@@ -196,20 +200,51 @@ bool tc_DEBUG_platform_key_down(u8 key)
     return win32_DEBUG_key_array[key] == 1;
 }
 
-void tc_DEBUG_platform_get_mouse_position(u32 *x, u32 *y)
+void tc_DEBUG_platform_get_mouse_position(s32 *x, s32 *y)
 {
     POINT position = {};
     GetCursorPos(&position);
-    *x = (u32)position.x;
-    *y = (u32)position.y;
+    *x = (s32)position.x;
+    *y = (s32)position.y;
 }
 
-void tc_DEBUG_platfrom_relative_mode(tc_Window *window)
+void tc_DEBUG_platfrom_relative_mode(tc_Window *window, s32 *x, s32 *y)
 {
+    ShowCursor(false);
+
+    POINT position;
+    GetCursorPos(&position);
+    static s32 last_mouse_x = position.x;
+    static s32 last_mouse_y = position.y;
+    
+    *x = position.x - last_mouse_x;
+    *y = last_mouse_y - position.y;
+
     RECT rect;
     GetWindowRect(window->handle, &rect);
-    s32 width = rect.right - rect.left;
-    s32 height = rect.bottom - rect.top;
-    SetCursorPos(win32_DEBUG_window_pos_x + width/2, win32_DEBUG_window_pos_y + height/2);
-    ShowCursor(false);
+    
+    if(position.x > rect.right)
+    {
+        SetCursorPos(rect.left, position.y);
+        position.x = rect.left;
+    }
+    else if(position.x < rect.left)
+    {
+        SetCursorPos(rect.right, position.y);
+        position.x = rect.right;
+    }
+    
+    if(position.y > rect.bottom)
+    {
+        SetCursorPos(position.x, rect.top);
+        position.y = rect.top;
+    }
+    else if(position.y < rect.top)
+    {
+        SetCursorPos(position.x, rect.bottom);
+        position.y = rect.bottom;
+    }
+    
+    last_mouse_x = position.x;
+    last_mouse_y = position.y;
 }

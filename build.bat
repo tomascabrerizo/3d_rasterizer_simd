@@ -3,7 +3,7 @@
 if not exist .\build mkdir .\build
 
 set TARGET=tc_engine
-set CFLAGS=/nologo /O2 /Zi /Wall /WX /wd4668 /wd4100 /wd4062 /wd4820 /wd5045 /wd4324 /wd4711 /wd4710 /wd5220
+set CFLAGS=/nologo /Od /Zi /Wall /WX /wd4668 /wd4100 /wd4062 /wd4820 /wd5045 /wd4324 /wd4711 /wd4710 /wd5220
 set SRCS=build_all.cpp
 set LFLAGS=/incremental:no
 set LIBS=kernel32.lib user32.lib gdi32.lib Winmm.lib

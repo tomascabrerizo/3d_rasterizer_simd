@@ -29,15 +29,12 @@ int main()
     m4 translation5 = m4_translate(_v3( 0, -1, -3.2f));
     m4 translation6 = m4_translate(_v3( 2, -1, -3.2f));
     
-    u32 last_mouse_x, last_mouse_y;
-    tc_DEBUG_platform_get_mouse_position(&last_mouse_x, &last_mouse_y);
-    
     v3 world_up = _v3(0.0f, 1.0f, 0.0f);
     v3 camera_pos = _v3(0.0f, 0.0f, 0.0f);
+    v3 camera_dir = _v3(0.0f, 0.0f, -1.0f);
     f32 yaw =  -90.0f;
     f32 pitch = 0.0f;
-
-    v3 camera_dir = _v3(0.0f, 0.0f, 1.0f);
+    
 
     bool should_close = false;
     while(!should_close)
@@ -54,16 +51,14 @@ int main()
             }
         }
         
-        
         if(tc_DEBUG_platform_key_down('M'))
         {
             should_close = true;
         }
 
-        u32 mouse_x, mouse_y;
-        tc_DEBUG_platform_get_mouse_position(&mouse_x, &mouse_y);
-        s32 rel_x = (s32)mouse_x - (s32)last_mouse_x;
-        s32 rel_y = (s32)last_mouse_y - (s32)mouse_y;
+        s32 rel_x;
+        s32 rel_y;
+        tc_DEBUG_platfrom_relative_mode(window, &rel_x, &rel_y);
         
         f32 sensitivity = 0.1f;
         f32 mouse_offset_x = (f32)rel_x * sensitivity;
@@ -75,43 +70,44 @@ int main()
         if(pitch > 89.0f) pitch = 89.0f;
         if(pitch < -89.0f) pitch = -89.0f;
         
-        camera_dir.x = -f32_cos(f32_rad(yaw)) * f32_cos(f32_rad(pitch));
-        camera_dir.y = -f32_sin(f32_rad(pitch));
-        camera_dir.z = -f32_sin(f32_rad(yaw)) * f32_cos(f32_rad(pitch));
+        camera_dir.x = f32_cos(f32_rad(yaw)) * f32_cos(f32_rad(pitch));
+        camera_dir.y = f32_sin(f32_rad(pitch));
+        camera_dir.z = f32_sin(f32_rad(yaw)) * f32_cos(f32_rad(pitch));
         camera_dir = v3_normalize(camera_dir);
 
-        last_mouse_x = mouse_x;
-        last_mouse_y = mouse_y;
+        v3 right = v3_normalize(v3_cross(camera_dir, world_up));
+        v3 up = v3_normalize(v3_cross(right, camera_dir));
         
-        v3 right = v3_normalize(v3_cross(world_up, camera_dir));
-        v3 up = v3_normalize(v3_cross(camera_dir, right));
-
+        f32 speed = 5.0f * dt;
         if(tc_DEBUG_platform_key_down('W'))
         {
-            camera_pos = camera_pos - camera_dir * dt;
+            camera_pos = camera_pos + camera_dir * speed;
         }
         if(tc_DEBUG_platform_key_down('S'))
         {
-            camera_pos = camera_pos + camera_dir * dt;
+            camera_pos = camera_pos - camera_dir * speed;
         }
         if(tc_DEBUG_platform_key_down('A'))
         {
-            camera_pos = camera_pos - right * dt;
+            camera_pos = camera_pos - right * speed;
         }
         if(tc_DEBUG_platform_key_down('D'))
         {
-            camera_pos = camera_pos + right * dt;
+            camera_pos = camera_pos + right * speed;
         }
         if(tc_DEBUG_platform_key_down('Q'))
         {
-            camera_pos = camera_pos + up * dt;
+            camera_pos = camera_pos + world_up * speed;
         }
         if(tc_DEBUG_platform_key_down('E'))
         {
-            camera_pos = camera_pos - up * dt;
+            camera_pos = camera_pos - world_up * speed;
         }
         
-        m4 view = m4_look_at(right, up, camera_dir, camera_pos);
+        v3 camera_tar = camera_pos + camera_dir;
+        v3 camera_v = v3_normalize(camera_pos - camera_tar);
+
+        m4 view = m4_look_at(right, up, camera_v, camera_pos);
 
         static f32 angle = 0;
         m4 rotation = m4_rotate_y(f32_rad(angle)) * m4_rotate_z(f32_rad(angle));
@@ -142,7 +138,7 @@ int main()
         }
         last_ms = current_ms;
         
-        printf("ms: %d\n", frame_ms);
+        //printf("ms: %d\n", frame_ms);
     }
     
     tc_renderer_destroy(renderer);
