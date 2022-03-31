@@ -31,8 +31,8 @@ typedef double f64;
 
 typedef size_t word;
 
-#define KB(n) (n * 1024LL)
-#define MB(n) (n * 1024LL * 1024LL)
-#define GB(n) (n * 1024LL * 1024LL * 1024LL)
+#define KB(n) (n * 1024ULL)
+#define MB(n) (n * 1024ULL * 1024ULL)
+#define GB(n) (n * 1024ULL * 1024ULL * 1024ULL)
 
 #endif // TC_TYPES_H

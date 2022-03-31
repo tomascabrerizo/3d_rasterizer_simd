@@ -20,7 +20,7 @@ struct ArrayHeader
 #define array_push(array, item) (array_may_grow(array, 1), (array)[array_header(array)->size++] = (item))
 #define array_pop(array) (array_header(array)->size--, (array)[array_header(array)->size]) 
 #define array_clear(array) ((array) ? array_header(array)->size = 0 : 0)
-#define array_free(array) (free((void *)array_header(array)), array = 0)
+#define array_free(array) ((array) ? free((void *)array_header(array)) : 0, array = 0)
 
 template <typename T>
 static T *array_grow_wrapper(T *array, size_t element_size)

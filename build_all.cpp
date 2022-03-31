@@ -1,6 +1,7 @@
 #include "platform/platform.cpp"
 #include "renderer/software_renderer.cpp"
 #include "renderer/renderer.cpp"
+#include "gui/gui.cpp"
 
 #include <stdio.h>
 
@@ -104,10 +105,7 @@ int main()
             camera_pos = camera_pos - world_up * speed;
         }
         
-        v3 camera_tar = camera_pos + camera_dir;
-        v3 camera_v = v3_normalize(camera_pos - camera_tar);
-
-        m4 view = m4_look_at(right, up, camera_v, camera_pos);
+        m4 view = m4_look_at(right, up, v3_normalize(-camera_dir), camera_pos);
 
         static f32 angle = 0;
         m4 rotation = m4_rotate_y(f32_rad(angle)) * m4_rotate_z(f32_rad(angle));
@@ -138,7 +136,7 @@ int main()
         }
         last_ms = current_ms;
         
-        //printf("ms: %d\n", frame_ms);
+        printf("ms: %d\n", frame_ms);
     }
     
     tc_renderer_destroy(renderer);

@@ -344,7 +344,6 @@ inline m4 m4_rotate_z(f32 a)
     return result;
 }
 
-
 inline m4 m4_perspective(f32 fov, f32 aspect, f32 f, f32 n)
 {
     f32 c = 1.0f / f32_tan(fov/2);
