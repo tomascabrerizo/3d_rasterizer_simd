@@ -3,146 +3,65 @@
 
 #include "core/types.h"
 
-// MurmurHash2, 64-bit versions, by Austin Appleb
-u64 tc_hash_64(const void *key, int len, unsigned int seed)
+struct tc_GuiPoint
 {
-	const u64 m = 0xc6a4a7935bd1e995;
-	const int r = 47;
+    s32 x, y;
+};
 
-	u64 h = seed ^ (len * m);
-
-	const u64 * data = (const u64 *)key;
-	const u64 * end = data + (len/8);
-
-	while(data != end)
-	{
-		u64 k = *data++;
-
-		k *= m; 
-		k ^= k >> r; 
-		k *= m; 
-		
-		h ^= k;
-		h *= m; 
-	}
-
-	const unsigned char * data2 = (const unsigned char*)data;
-
-	switch(len & 7)
-	{
-	case 7: h ^= uint64_t(data2[6]) << 48;
-	case 6: h ^= uint64_t(data2[5]) << 40;
-	case 5: h ^= uint64_t(data2[4]) << 32;
-	case 4: h ^= uint64_t(data2[3]) << 24;
-	case 3: h ^= uint64_t(data2[2]) << 16;
-	case 2: h ^= uint64_t(data2[1]) << 8;
-	case 1: h ^= uint64_t(data2[0]);
-	        h *= m;
-	};
- 
-	h ^= h >> r;
-	h *= m;
-	h ^= h >> r;
-
-	return h;
-}
-
-#define TC_HASH_UNUSED 0xFFFFFFFFFFFFFFFFULL 
-#define TC_HASH_TOMBSTONE 0xFFFFFFFFFFFFFFFeULL
-
-#define tc_Hash(K, V) {     \
-    u32 num_buckets;        \
-    u32 used_buckets;       \
-    K *keys;                \
-    V *values;              \
-}
-
-struct tc_HashU64 tc_Hash(u64, u64);
-
-static inline u32 tc_hash_first_index(u64 key, u32 num_buckets)
+struct tc_GuiRect
 {
-    return key & (num_buckets - 1);
-}
+    tc_GuiPoint min;
+    tc_GuiPoint max;
+};
 
-static inline s32 tc_hash__add_no_grow(u64 *keys, u32 num_buckets, u64 key)
+struct tc_GuiWindow
 {
-    u32 max_distance = num_buckets;
-    if(!num_buckets)
-    {
-        return -1;
-    }
-    u32 i = tc_hash_first_index(key, num_buckets);
-    u32 distance = 0;
-    while(keys[i] != TC_HASH_UNUSED && keys[i] != TC_HASH_TOMBSTONE)
-    {
-        if(distance > max_distance)
-        {
-            return -1;
-        }
-        i = (i + 1) & (num_buckets - 1);
-        ++distance;
-    }
-    return (s32)i;
-}
+    u64 id; 
+    const char *name;
+    tc_GuiRect rect;
+    tc_GuiWindow *next;
+};
 
-static inline void tc_hash__grow_to(u64 **keys_ptr, void **values_ptr, u64 value_bytes, u32 *num_buckets_ptr, u32 *used_buckets_ptr, u32 new_buckets)
+struct tc_GuiLayout
 {
-    u64 *keys = *keys_ptr;
-    void *values = values_ptr ? *values_ptr : 0;
-    u32 num_buckets = *num_buckets_ptr;
-    if(num_buckets >= new_buckets)
-    {
-        return;
-    }
-    u64 bytes_to_alloc = new_buckets * (sizeof(*keys) + value_bytes) + value_bytes;
-    u64 *new_keys = (u64 *)malloc(bytes_to_alloc);
-    void *default_value_ptr = new_keys + new_buckets;
-    void *new_values = (u8 *)default_value_ptr + value_bytes;
-    memset(new_keys, 0xFF, new_buckets*sizeof(*keys));
-    u32 new_used = 0;
+    tc_GuiRect button_rect;
+};
+
+struct tc_GuiInput
+{
+    tc_GuiPoint mouse;
+};
+
+#define TC_GUI_TEMP_BUFFER_SIZE 256
+
+struct tc_GuiContext
+{
+    // NOTE: widget manipulation
+    u64 active;
+    u64 hot;
     
-    for(u32 i = 0; i < num_buckets; ++i)
-    {
-        if(keys[i] != TC_HASH_UNUSED && keys[i] != TC_HASH_TOMBSTONE)
-        {
-            s32 new_i = tc_hash__add_no_grow(new_keys, num_buckets, keys[i]);
-            new_keys[new_i] = keys[i];
-            if(value_bytes)
-            {
-                memcpy((u8 *)new_values + new_i * value_bytes, (u8 *)values + i * value_bytes, value_bytes);
-            }
-            ++new_used;
-        }
-    }
-    // TODO: tc_hash__free(keys_ptr, num_buckets_ptr, values_ptr, value_bytes);
-    *used_buckets_ptr = new_used;
-    *num_buckets_ptr = new_buckets;
-    *keys_ptr = new_keys;
-    if(values_ptr)
-    {
-        *values_ptr = new_values; 
-    }
-}
+    // NOTE: window states
+    tc_GuiWindow *windows; 
+    tc_GuiWindow *active_window;
+    
+    // NOTE: active layout of the gui
+    tc_GuiLayout layout;
+    // NOTE: input for the gui
+    tc_GuiInput input;
 
-static inline void tc_hash__grow(u64 **keys_ptr, void **values_ptr, u64 value_bytes, u32 *num_buckets_ptr, u32 *used_buckets_ptr)
-{
-    u32 num_buckets = *num_buckets_ptr;
-    u32 used_buckets = *used_buckets_ptr;
+    // NOTE: render buffer
+    f32 vertex_buffer[TC_GUI_TEMP_BUFFER_SIZE * 3];
+    u32 vertex_buffer_count;
+    s32 index_buffer[TC_GUI_TEMP_BUFFER_SIZE];
+    u32 index_buffer_count;
+};
 
-    u32 new_buckets = num_buckets ? num_buckets : 16;
-    while((f32)used_buckets / (f32)new_buckets > 0.5f)
-    {
-        new_buckets *= 2;
-    }
-    tc_hash__grow_to(keys_ptr, values_ptr, value_bytes, num_buckets_ptr, used_buckets_ptr, new_buckets);
-}
+void tc_gui_init(tc_GuiContext *ctx);
+void tc_gui_free(tc_GuiContext *ctx);
 
-static inline u32 tc_hash__add(u64 **keys_ptr, void **values_ptr, u64 value_bytes, u32 *num_buckets_ptr, u32 *used_buckets_ptr, u64 key)
-{
-    if(!*num_buckets_ptr || ((f32)*used_buckets_ptr / (f32)*num_buckets_ptr) > 0.7f)
-    {
-        tc_hash__grow(keys_ptr, values_ptr, value_bytes, num_buckets_ptr, used_buckets_ptr);
-    }
-}
+bool tc_gui_window_begin(tc_GuiContext *ctx, const char *name, s32 x, s32 y, s32 w, s32 h);
+void tc_gui_window_end(tc_GuiContext *ctx);
+
+bool tc_gui_button(tc_GuiContext *ctx, const char *name);
 
 #endif // TC_GUI_H

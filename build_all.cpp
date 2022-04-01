@@ -36,6 +36,8 @@ int main()
     f32 yaw =  -90.0f;
     f32 pitch = 0.0f;
     
+    tc_GuiContext ctx;
+    tc_gui_init(&ctx);
 
     bool should_close = false;
     while(!should_close)
@@ -56,6 +58,17 @@ int main()
         {
             should_close = true;
         }
+        
+        if(tc_gui_window_begin(&ctx, "tomas", 0, 0, 100, 100))
+        {
+        }
+        tc_gui_window_end(&ctx);
+
+        if(tc_gui_window_begin(&ctx, "tomas1", 0, 0, 100, 100))
+        {
+        }
+        tc_gui_window_end(&ctx);
+
 
         s32 rel_x;
         s32 rel_y;
